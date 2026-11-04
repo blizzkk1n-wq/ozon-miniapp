@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>OzonShift — Автозапись на смены</title>
+  <title>OzonDay — Автозапись на смены</title>
+  <link rel="icon" type="image/jpeg" href="logo.jpg">
+  <link rel="apple-touch-icon" href="logo.jpg">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -44,12 +46,20 @@
     .topbar-logo { display: flex; align-items: center; gap: 9px; }
     .topbar-logo .logo-icon {
       width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--blue), var(--cyan));
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; box-shadow: 0 0 14px rgba(47,128,255,0.4);
+      overflow: hidden;
+      box-shadow: 0 0 14px rgba(47,128,255,0.5);
+      background: #000;
+    }
+    .topbar-logo .logo-icon img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
     }
     .topbar-logo .logo-name { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
     .topbar-logo .logo-name span { color: var(--cyan); }
+    .logo-day { display: inline-flex; font-weight: 900; letter-spacing: 0.2px; margin-left: 2px; }
+    .logo-day .d { color: #FF3366; text-shadow: 0 0 12px rgba(255,51,102,0.55); }
+    .logo-day .a { color: #FFB800; text-shadow: 0 0 12px rgba(255,184,0,0.55); }
+    .logo-day .y { color: #00E5FF; text-shadow: 0 0 12px rgba(0,229,255,0.55); }
     .topbar-badge {
       background: var(--blue-dim); border: 1px solid rgba(47,128,255,0.3);
       color: var(--blue); font-size: 11px; font-weight: 600;
@@ -199,14 +209,29 @@
       width: 56px; height: 56px; border-radius: 50%;
       background: linear-gradient(135deg, var(--blue), var(--cyan));
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 20px rgba(47,128,255,0.5);
+      box-shadow: 0 4px 22px rgba(47,128,255,0.6);
       cursor: pointer; transition: transform .15s;
-      position: relative; top: -6px;
+      position: relative; top: -14px;
     }
     .nav-center-btn:active { transform: scale(.93); }
-    .nav-center-btn svg { width: 26px; height: 26px; }
-    .nav-center-btn svg path { fill: #fff; }
-    .nav-center-label { font-size: 10px; font-weight: 600; color: var(--blue); margin-top: -2px; }
+    .nav-center-icon {
+      font-size: 38px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+      user-select: none;
+      transform: translateY(-1px);
+    }
+    .nav-center-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan);
+      position: relative;
+      top: -10px;
+      letter-spacing: 0.3px;
+    }
 
     /* ───── BALANCE SCREEN ───── */
     .back-btn {
@@ -539,8 +564,8 @@
 <div id="screen-home" class="screen active">
   <div class="topbar">
     <div class="topbar-logo">
-      <div class="logo-icon">⚡</div>
-      <div class="logo-name">Ozon<span>Shift</span></div>
+      <div class="logo-icon"><img src="logo.jpg" alt="OzonDay"></div>
+      <div class="logo-name">Ozon<span class="logo-day"><span class="d">D</span><span class="a">a</span><span class="y">y</span></span></div>
     </div>
     <div class="topbar-badge" id="home-status">● Активен</div>
   </div>
@@ -590,7 +615,7 @@
     <div class="sh-right">Пойманные →</div>
   </div>
   <div class="catch-row" onclick="goTo('screen-catch')">
-    <div class="cr-label">🎯 Поймать новую смену</div>
+    <div class="cr-label">🎯 Ловить новую смену</div>
     <div class="cr-price" id="home-price">70 ₽</div>
   </div>
 
@@ -639,7 +664,7 @@
 <div id="screen-catch" class="screen">
   <div class="catch-header">
     <div class="ch-pulse"></div>
-    <div class="ch-title">Поймать смену</div>
+    <div class="ch-title">Ловить смену</div>
   </div>
 
   <!-- Warehouse -->
@@ -687,7 +712,7 @@
 
   <!-- Submit -->
   <div class="submit-wrap">
-    <button class="btn-submit" onclick="submitRequest()">⚡ Запустить поиск</button>
+    <button class="btn-submit" onclick="submitRequest()">🎣 Запустить поиск</button>
   </div>
 </div>
 
@@ -763,7 +788,7 @@
       <div class="si-icon" style="background:rgba(255,184,0,0.12);">ℹ️</div>
       <div>
         <div class="si-label">О приложении</div>
-        <div class="si-sub">OzonShift v1.0.0</div>
+        <div class="si-sub">OzonDay v1.0.0</div>
       </div>
     </div>
     <span class="si-arrow">›</span>
@@ -830,7 +855,7 @@
   <!-- STEP 1: Phone -->
   <div id="auth-step-1">
     <div class="auth-header">
-      <div class="auth-logo">⚡</div>
+      <div class="auth-logo" style="overflow:hidden;padding:0;background:transparent;"><img src="logo.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:16px;" alt="OzonDay"></div>
       <div class="auth-title">Привязка OzonJob</div>
       <div class="auth-sub">Введите номер телефона, чтобы бот мог автоматически бронировать смены на ваш профиль</div>
     </div>
@@ -894,9 +919,9 @@
   </div>
   <div class="nav-item nav-center" id="nav-catch" onclick="goTo('screen-catch'); setNav('nav-catch')">
     <div class="nav-center-btn">
-      <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+      <span class="nav-center-icon">🎣</span>
     </div>
-    <span class="nav-center-label">Поймать</span>
+    <span class="nav-center-label">Ловить</span>
   </div>
   <div class="nav-item" id="nav-chat" onclick="goTo('screen-chat'); setNav('nav-chat')">
     <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
