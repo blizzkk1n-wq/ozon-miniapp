@@ -1631,11 +1631,13 @@
         haptic('error');
         return;
       }
-      showToast('🔄 Проверка ключа...');
-      if (tg) {
-        tg.sendData(JSON.stringify({ action: 'activate_key', key: code }));
+      showToast('🔄 Активация ключа...');
+      const botUrl = 'https://t.me/ozonday_bot?start=key_' + encodeURIComponent(code);
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(botUrl);
+        if (tg.close) tg.close();
       } else {
-        window.location.href = 'https://t.me/ozonday_bot?start=key_' + encodeURIComponent(code);
+        window.location.href = botUrl;
       }
       return;
     }
@@ -1647,14 +1649,12 @@
     }
 
     showToast(`🔄 Создание счёта на ${selectedPayAmount} ₽...`);
-    if (tg) {
-      tg.sendData(JSON.stringify({
-        action: 'create_payment',
-        method: selectedPayMethod,
-        amount: selectedPayAmount
-      }));
+    const payUrl = `https://t.me/ozonday_bot?start=pay_${selectedPayMethod}_${selectedPayAmount}`;
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink(payUrl);
+      if (tg.close) tg.close();
     } else {
-      window.location.href = `https://t.me/ozonday_bot?start=pay_${selectedPayMethod}_${selectedPayAmount}`;
+      window.location.href = payUrl;
     }
   }
 
