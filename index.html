@@ -273,6 +273,42 @@
       padding: 8px 16px; border-radius: 20px; cursor: pointer;
     }
 
+    .pay-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
+    .pay-chip {
+      background: var(--bg3); border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px 10px; text-align: center; cursor: pointer; transition: all .2s; position: relative;
+    }
+    .pay-chip:active { transform: scale(0.97); }
+    .pay-chip.active { background: var(--blue-dim); border-color: var(--blue); }
+    .pay-chip .pc-amount { font-size: 17px; font-weight: 800; color: #fff; }
+    .pay-chip .pc-shifts { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .pay-chip.active .pc-shifts { color: var(--cyan); }
+    .pay-chip .pc-badge {
+      position: absolute; top: -6px; right: 8px; background: linear-gradient(135deg, #FF0055, #FF5500);
+      color: #fff; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 8px;
+    }
+    .pay-methods { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .pay-method {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg3); border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px 14px; cursor: pointer; transition: all .2s;
+    }
+    .pay-method:active { transform: scale(0.98); }
+    .pay-method.active { background: var(--blue-dim); border-color: var(--blue); }
+    .pm-left { display: flex; align-items: center; gap: 12px; }
+    .pm-ico { font-size: 22px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+    .pm-title { font-size: 14px; font-weight: 700; color: #fff; }
+    .pm-sub { font-size: 11px; color: var(--text2); }
+    .pm-radio {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--text3);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pay-method.active .pm-radio { border-color: var(--cyan); }
+    .pay-method.active .pm-radio::after {
+      content: ""; width: 8px; height: 8px; background: var(--cyan); border-radius: 50%;
+    }
+    .key-box { display: none; margin-bottom: 14px; }
+    .key-box.show { display: block; }
     .topup-card {
       margin: 0 14px 10px; background: var(--card);
       border: 1px solid var(--border); border-radius: 16px; padding: 18px;
@@ -661,12 +697,76 @@
   </div>
 
   <div class="topup-card">
-    <div class="tu-label">Пополнение</div>
-    <input class="topup-input" id="topup-input" type="number" value="100" placeholder="Сумма">
-    <div class="topup-hint">Минимальная сумма: 100 ₽</div>
-    <button class="btn-pay" onclick="handleTopup()">Пополнить</button>
+    <div class="tu-label">1. Выберите пакет смен</div>
+    <div class="pay-chips">
+      <div class="pay-chip" data-amount="60" onclick="selectPayChip(this)">
+        <div class="pc-amount">60 ₽</div>
+        <div class="pc-shifts">1 смена</div>
+      </div>
+      <div class="pay-chip" data-amount="180" onclick="selectPayChip(this)">
+        <div class="pc-amount">180 ₽</div>
+        <div class="pc-shifts">3 смены</div>
+      </div>
+      <div class="pay-chip active" data-amount="300" onclick="selectPayChip(this)">
+        <div class="pc-badge">ХИТ</div>
+        <div class="pc-amount">300 ₽</div>
+        <div class="pc-shifts">5 смен (неделя)</div>
+      </div>
+      <div class="pay-chip" data-amount="600" onclick="selectPayChip(this)">
+        <div class="pc-amount">600 ₽</div>
+        <div class="pc-shifts">10 смен</div>
+      </div>
+    </div>
+
+    <input class="topup-input" id="topup-input" type="number" value="300" placeholder="Другая сумма (₽)" oninput="onCustomAmountInput(this.value)">
+    <div class="topup-hint" style="margin-bottom:14px;">Стоимость 1 смены: 60 ₽ (списание строго после поимки)</div>
+
+    <div class="tu-label">2. Способ оплаты</div>
+    <div class="pay-methods">
+      <div class="pay-method active" data-method="platega" onclick="selectPayMethod(this)">
+        <div class="pm-left">
+          <div class="pm-ico">💳</div>
+          <div>
+            <div class="pm-title">СБП / Банковская карта</div>
+            <div class="pm-sub">Platega • СБП 0%, МИР, Visa, Mastercard</div>
+          </div>
+        </div>
+        <div class="pm-radio"></div>
+      </div>
+
+      <div class="pay-method" data-method="cryptobot" onclick="selectPayMethod(this)">
+        <div class="pm-left">
+          <div class="pm-ico">💎</div>
+          <div>
+            <div class="pm-title">CryptoBot (Telegram)</div>
+            <div class="pm-sub">USDT, TON, Notcoin • Без комиссий</div>
+          </div>
+        </div>
+        <div class="pm-radio"></div>
+      </div>
+
+      <div class="pay-method" data-method="key" onclick="selectPayMethod(this)">
+        <div class="pm-left">
+          <div class="pm-ico">🔑</div>
+          <div>
+            <div class="pm-title">Активация ключа / кода</div>
+            <div class="pm-sub">Коды Digiseller или от поддержки</div>
+          </div>
+        </div>
+        <div class="pm-radio"></div>
+      </div>
+    </div>
+
+    <!-- Блок ввода ключа (если выбран способ Ключ) -->
+    <div class="key-box" id="key-box">
+      <input class="topup-input" id="voucher-input" type="text" placeholder="Введите ключ, например: OZON-60-XXXX" style="font-size:14px;text-transform:uppercase;">
+    </div>
+
+    <button class="btn-pay" id="btn-pay-submit" onclick="executeTopup()">Оплатить 300 ₽</button>
+
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text2);">
-      Совершая пополнение, вы принимаете условия <a href="terms.html" style="color:var(--cyan);text-decoration:none;font-weight:600;">Публичной оферты</a>
+      Комиссия шлюза рассчитывается на странице оплаты.<br>
+      Совершая пополнение, вы принимаете <a href="terms.html" style="color:var(--cyan);text-decoration:none;font-weight:600;">Публичную оферту</a>
     </div>
   </div>
   <div class="or-divider">или</div>
@@ -1478,6 +1578,86 @@
   }
 
   // ─── Balance / Topup ───
+  let selectedPayAmount = 300;
+  let selectedPayMethod = 'platega';
+
+  function selectPayChip(el) {
+    haptic('light');
+    document.querySelectorAll('.pay-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    selectedPayAmount = parseInt(el.getAttribute('data-amount')) || 60;
+    document.getElementById('topup-input').value = selectedPayAmount;
+    updatePayButton();
+  }
+
+  function onCustomAmountInput(val) {
+    const amt = parseInt(val) || 0;
+    document.querySelectorAll('.pay-chip').forEach(c => c.classList.remove('active'));
+    selectedPayAmount = amt;
+    updatePayButton();
+  }
+
+  function selectPayMethod(el) {
+    haptic('light');
+    document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('active'));
+    el.classList.add('active');
+    selectedPayMethod = el.getAttribute('data-method');
+    
+    const keyBox = document.getElementById('key-box');
+    if (selectedPayMethod === 'key') {
+      keyBox.classList.add('show');
+    } else {
+      keyBox.classList.remove('show');
+    }
+    updatePayButton();
+  }
+
+  function updatePayButton() {
+    const btn = document.getElementById('btn-pay-submit');
+    if (!btn) return;
+    if (selectedPayMethod === 'key') {
+      btn.textContent = '🔑 Активировать ключ';
+    } else {
+      btn.textContent = `💳 Оплатить ${selectedPayAmount || 0} ₽`;
+    }
+  }
+
+  function executeTopup() {
+    haptic('medium');
+    if (selectedPayMethod === 'key') {
+      const code = (document.getElementById('voucher-input').value || '').trim();
+      if (!code) {
+        showToast('⚠️ Введите ключ пополнения');
+        haptic('error');
+        return;
+      }
+      showToast('🔄 Проверка ключа...');
+      if (tg) {
+        tg.sendData(JSON.stringify({ action: 'activate_key', key: code }));
+      } else {
+        window.location.href = 'https://t.me/ozonday_bot?start=key_' + encodeURIComponent(code);
+      }
+      return;
+    }
+
+    if (selectedPayAmount < 60) {
+      showToast('⚠️ Минимальная сумма: 60 ₽ (1 смена)');
+      haptic('error');
+      return;
+    }
+
+    showToast(`🔄 Создание счёта на ${selectedPayAmount} ₽...`);
+    if (tg) {
+      tg.sendData(JSON.stringify({
+        action: 'create_payment',
+        method: selectedPayMethod,
+        amount: selectedPayAmount
+      }));
+    } else {
+      window.location.href = `https://t.me/ozonday_bot?start=pay_${selectedPayMethod}_${selectedPayAmount}`;
+    }
+  }
+
   function handleTopup() {
     const amount = parseInt(document.getElementById('topup-input').value) || 0;
     if (amount < 100) { showToast('⚠️ Минимум 100 ₽'); haptic('error'); return; }
