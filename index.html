@@ -1323,6 +1323,8 @@
     buildCalendar();
     updateUserCard();
     updateRefLink();
+    updateBalanceUI();
+    updateAuthUI();
         // Восстанавливаем сохраненный склад пользователя
     const savedWhId = localStorage.getItem('my_saved_warehouse_id') || 'tver_rfc';
     selectWarehouse(savedWhId, false);
@@ -1749,27 +1751,79 @@
   }
 
 
-  // ─── Auth State & Handlers ───
-  state.phone = localStorage.getItem('ozon_phone') || '';
+  // ─── Dynamic Balance & Auth Sync ───
+  const urlParams = new URLSearchParams(window.location.search);
+  const balParam = urlParams.get('bal');
+  if (balParam !== null && !isNaN(parseFloat(balParam))) {
+    state.balance = parseFloat(balParam);
+  }
+
+  if (urlParams.has('phone')) {
+    const p = (urlParams.get('phone') || '').trim();
+    if (p && p !== 'null' && p !== 'None' && p !== 'undefined') {
+      state.phone = p;
+      localStorage.setItem('ozon_phone', p);
+    } else {
+      state.phone = '';
+      localStorage.removeItem('ozon_phone');
+    }
+  } else {
+    state.phone = localStorage.getItem('ozon_phone') || '';
+  }
   state.pending_phone = '';
 
+  function updateBalanceUI() {
+    const homeBal = document.getElementById('home-balance');
+    if (homeBal) homeBal.textContent = (state.balance || 0).toFixed(2) + ' ₽';
+    const balAmt = document.getElementById('bal-amount');
+    if (balAmt) balAmt.textContent = (state.balance || 0).toFixed(0) + ' ₽';
+    const setBal = document.getElementById('settings-balance');
+    if (setBal) setBal.textContent = (state.balance || 0).toFixed(0) + ' ₽ на счёте';
+  }
+
   function updateAuthUI() {
+    const banner = document.getElementById('home-auth-banner');
+    if (!banner) return;
+    const title = document.getElementById('auth-banner-title');
+    const sub = document.getElementById('auth-banner-sub');
+    const rightIco = banner.querySelector('div[style*="font-weight:700"]');
+
     if (state.phone) {
-      const banner = document.getElementById('home-auth-banner');
-      if (banner) {
-        banner.style.background = 'rgba(39,201,123,0.07)';
-        banner.style.borderColor = 'rgba(39,201,123,0.3)';
-        const title = document.getElementById('auth-banner-title');
-        if (title) {
-          title.textContent = '✅ OzonJob подключён';
-          title.style.color = 'var(--green)';
-        }
-        const sub = document.getElementById('auth-banner-sub');
-        if (sub) {
-          sub.textContent = '+7 ' + state.phone;
-        }
+      banner.style.background = 'rgba(39,201,123,0.08)';
+      banner.style.borderColor = 'rgba(39,201,123,0.35)';
+      if (title) {
+        title.textContent = '✅ OzonJob подключён';
+        title.style.color = 'var(--green)';
       }
+      if (sub) {
+        sub.textContent = '+7 ' + state.phone;
+        sub.style.color = 'var(--text2)';
+      }
+      if (rightIco) rightIco.textContent = 'Изменить →';
+    } else {
+      banner.style.background = 'rgba(255,184,0,0.08)';
+      banner.style.borderColor = 'rgba(255,184,0,0.35)';
+      if (title) {
+        title.textContent = '⚠️ Привязать OzonJob';
+        title.style.color = 'var(--yellow)';
+      }
+      if (sub) {
+        sub.textContent = 'Аккаунт не привязан • Нажмите для входа';
+        sub.style.color = 'var(--text3)';
+      }
+      if (rightIco) rightIco.textContent = 'Войти →';
     }
+  }
+
+  function resetAuthPhone() {
+    state.phone = '';
+    state.pending_phone = '';
+    localStorage.removeItem('ozon_phone');
+    updateAuthUI();
+    document.getElementById('auth-step-1').style.display = 'block';
+    document.getElementById('auth-step-2').style.display = 'none';
+    document.getElementById('auth-step-3').style.display = 'none';
+    showToast('Аккаунт OzonJob отвязан');
   }
 
   function requestPhoneCode() {
