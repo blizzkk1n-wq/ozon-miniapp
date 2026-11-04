@@ -1079,8 +1079,10 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
-  // ─── Fast URL Query Parsing ───
-  const _urlParams = new URLSearchParams(window.location.search);
+  // ─── Robust Bulletproof URL Query Parsing ───
+  let _rawSearch = (window.location.search || '').replace(/\?/g, '&');
+  if (_rawSearch.startsWith('&')) _rawSearch = _rawSearch.slice(1);
+  const _urlParams = new URLSearchParams(_rawSearch);
   const _initBal = _urlParams.get('bal');
   const _initPhone = _urlParams.get('phone');
 
@@ -1763,8 +1765,8 @@
     state.balance = parseFloat(balParam);
   }
 
-  if (urlParams.has('phone')) {
-    const p = (urlParams.get('phone') || '').trim();
+  if (_urlParams.has('phone')) {
+    const p = (_urlParams.get('phone') || '').trim();
     if (p && p !== 'null' && p !== 'None' && p !== 'undefined') {
       state.phone = p;
       localStorage.setItem('ozon_phone', p);
