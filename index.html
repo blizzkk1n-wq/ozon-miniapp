@@ -884,6 +884,8 @@
     buildCalendar();
     updateUserCard();
     updateRefLink();
+    selectWarehouse('tver');
+    selectProcess('pick');
   }
 
   function updateUserCard() {
@@ -1022,8 +1024,18 @@
 
   // ─── Submit ───
   function submitRequest() {
-    if (!state.warehouse) { showToast('⚠️ Выбери склад'); haptic('error'); return; }
-    if (!state.process)   { showToast('⚠️ Выбери специальность'); haptic('error'); return; }
+    if (!state.warehouse) {
+      showToast('⚠️ Выберите склад в списке');
+      haptic('error');
+      goTo('screen-catch');
+      return;
+    }
+    if (!state.process) {
+      showToast('⚠️ Выберите специальность');
+      haptic('error');
+      goTo('screen-catch');
+      return;
+    }
 
     const payload = {
       warehouse_id: state.warehouse.id,
@@ -1034,14 +1046,29 @@
       target_date: state.date,
     };
 
-    if (tg) {
-      tg.sendData(JSON.stringify(payload));
-      haptic('success');
-    } else {
-      // Browser preview mode
-      showToast('✅ Данные отправлены (превью)');
-      console.log('Payload:', payload);
+    showToast('⚡ Отправка заявки...');
+    haptic('success');
+
+    // 1. Попытка нативного tg.sendData (если открыто через кнопку клавиатуры)
+    try {
+      if (tg && typeof tg.sendData === 'function') {
+        tg.sendData(JSON.stringify(payload));
+      }
+    } catch(e) {
+      console.warn('sendData error:', e);
     }
+
+    // 2. Фоллбэк: прямой deep-link бота (срабатывает из кнопки меню и инлайн)
+    setTimeout(() => {
+      const slug = 'req_' + [state.warehouse.id, state.process.id, state.shift, state.date].join('__');
+      const botUrl = 'https://t.me/MyOzonAlert_bot?start=' + slug;
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(botUrl);
+        if (tg.close) tg.close();
+      } else {
+        window.location.href = botUrl;
+      }
+    }, 250);
   }
 
   // ─── Balance / Topup ───
