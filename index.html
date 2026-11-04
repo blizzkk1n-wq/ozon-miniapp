@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OzonShift — Автозапись на смены</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #000000;
+      --bg2: #0A0A0A;
+      --bg3: #111111;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.09);
+      --blue: #2F80FF;
+      --blue-dim: rgba(47,128,255,0.18);
+      --cyan: #00D4FF;
+      --cyan-dim: rgba(0,212,255,0.15);
+      --green: #27C97B;
+      --green-dim: rgba(39,201,123,0.15);
+      --red: #FF4D6A;
+      --text: #E8EDF3;
+      --text2: #8B96A8;
+      --text3: #4A5568;
+      --gold: #FFB800;
+      --nav-h: 68px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; }
+
+    body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; padding-bottom: calc(var(--nav-h) + 8px); }
+
+    /* ───── SCREENS ───── */
+    .screen { display: none; flex-direction: column; min-height: calc(100vh - var(--nav-h)); animation: fadeIn .22s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ───── TOP BAR ───── */
+    .topbar {
+      padding: 14px 18px 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(180deg, var(--bg2) 0%, transparent 100%);
+      position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px);
+    }
+    .topbar-logo { display: flex; align-items: center; gap: 9px; }
+    .topbar-logo .logo-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; box-shadow: 0 0 14px rgba(47,128,255,0.4);
+    }
+    .topbar-logo .logo-name { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    .topbar-logo .logo-name span { color: var(--cyan); }
+    .topbar-badge {
+      background: var(--blue-dim); border: 1px solid rgba(47,128,255,0.3);
+      color: var(--blue); font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px; letter-spacing: .3px;
+    }
+
+    /* ───── SECTION LABEL ───── */
+    .sec-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+      color: var(--text3); text-transform: uppercase;
+      padding: 20px 18px 8px;
+    }
+
+    /* ───── CARDS ───── */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px 18px;
+      margin: 0 14px 10px;
+    }
+    .card-row { display: flex; align-items: center; justify-content: space-between; }
+
+    /* ───── WAREHOUSE PILL ───── */
+    .warehouse-pill {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; margin: 10px 14px 0;
+      padding: 13px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .warehouse-pill .wh-label { font-size: 11px; color: var(--text2); font-weight: 500; margin-bottom: 3px; }
+    .warehouse-pill .wh-name { font-size: 17px; font-weight: 700; }
+    .warehouse-pill .wh-help {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text2); font-size: 15px; cursor: pointer;
+    }
+
+    /* ───── BALANCE BLOCK ───── */
+    .balance-block { margin: 10px 14px 0; }
+    .balance-block .bal-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+    .balance-block .bal-amount { font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
+    .balance-block .bal-amount .bal-cur { font-size: 20px; font-weight: 600; color: var(--text2); margin-left: 3px; }
+    .bal-actions { display: flex; gap: 10px; margin-top: 12px; }
+    .btn-hist {
+      flex: 1; padding: 12px; border-radius: 12px;
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--cyan); font-size: 14px; font-weight: 600;
+      cursor: pointer; text-align: center;
+    }
+    .btn-topup {
+      flex: 1; padding: 12px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      border: none; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; text-align: center;
+      box-shadow: 0 4px 16px rgba(47,128,255,0.35);
+    }
+
+    /* ───── SHIFT ROW ───── */
+    .shift-row {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; margin: 0 14px 10px;
+      padding: 15px 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .shift-row .sh-left .sh-sub { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+    .shift-row .sh-left .sh-name { font-size: 16px; font-weight: 700; }
+    .shift-row .sh-left .sh-date { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .shift-row .sh-right { color: var(--cyan); font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .shift-row .sh-right svg { vertical-align: middle; }
+
+    /* ───── CATCH BUTTON ───── */
+    .catch-row {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; margin: 0 14px 10px;
+      padding: 17px 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; overflow: hidden;
+    }
+    .catch-row::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(47,128,255,0.06));
+      pointer-events: none;
+    }
+    .catch-row .cr-label { font-size: 16px; font-weight: 700; }
+    .catch-row .cr-price {
+      font-size: 15px; font-weight: 800; color: var(--blue);
+      background: var(--blue-dim); padding: 5px 12px; border-radius: 20px;
+    }
+
+    /* ───── BONUS CARDS ───── */
+    .bonus-grid { display: flex; gap: 10px; margin: 0 14px 10px; }
+    .bonus-card {
+      flex: 1; background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px 14px;
+      cursor: pointer; position: relative; overflow: hidden;
+    }
+    .bonus-card .bc-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .bonus-card .bc-sub { font-size: 12px; color: var(--text2); line-height: 1.4; }
+    .bonus-card .bc-emoji { font-size: 36px; margin-bottom: 10px; display: block; }
+    .bonus-card.ref { border-color: rgba(47,128,255,0.25); }
+    .bonus-card.ref::after {
+      content: ''; position: absolute;
+      bottom: -20px; right: -20px;
+      width: 80px; height: 80px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(47,128,255,0.2), transparent);
+    }
+    .bonus-card.rating { border-color: rgba(255,184,0,0.25); }
+    .bonus-card.rating::after {
+      content: ''; position: absolute;
+      bottom: -20px; right: -20px;
+      width: 80px; height: 80px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,184,0,0.2), transparent);
+    }
+
+    /* ───── BOTTOM NAV ───── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-around;
+      z-index: 100; backdrop-filter: blur(16px);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px; cursor: pointer; padding: 8px 0;
+      position: relative;
+    }
+    .nav-item svg { width: 22px; height: 22px; }
+    .nav-item .nav-label { font-size: 10px; font-weight: 500; color: var(--text3); transition: color .2s; }
+    .nav-item.active .nav-label { color: var(--blue); }
+    .nav-item.active svg path, .nav-item.active svg rect, .nav-item.active svg circle { fill: var(--blue); }
+    .nav-item.active svg .stroke-icon { stroke: var(--blue); fill: none; }
+    .nav-item svg path { fill: var(--text3); transition: fill .2s; }
+    .nav-item svg .stroke-icon { stroke: var(--text3); fill: none; transition: stroke .2s; }
+    .nav-badge {
+      position: absolute; top: 6px; left: calc(50% + 6px);
+      background: var(--blue); color: #fff; font-size: 9px; font-weight: 700;
+      padding: 1px 5px; border-radius: 10px; min-width: 18px; text-align: center;
+    }
+
+    /* ─── CENTER NAV (CATCH) ─── */
+    .nav-center { flex: 1.4; }
+    .nav-center-btn {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(47,128,255,0.5);
+      cursor: pointer; transition: transform .15s;
+      position: relative; top: -6px;
+    }
+    .nav-center-btn:active { transform: scale(.93); }
+    .nav-center-btn svg { width: 26px; height: 26px; }
+    .nav-center-btn svg path { fill: #fff; }
+    .nav-center-label { font-size: 10px; font-weight: 600; color: var(--blue); margin-top: -2px; }
+
+    /* ───── BALANCE SCREEN ───── */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 8px 16px;
+      font-size: 14px; font-weight: 600; color: var(--text);
+      cursor: pointer; margin: 14px 18px 4px;
+    }
+    .back-btn svg { width: 16px; height: 16px; }
+    .back-btn svg path { fill: var(--text); }
+
+    .screen-title { font-size: 22px; font-weight: 800; padding: 4px 18px 16px; letter-spacing: -.3px; }
+
+    .bal-current-card {
+      margin: 0 14px 10px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 16px; padding: 18px;
+      text-align: center;
+    }
+    .bal-current-card .bc-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+    .bal-current-card .bc-amount { font-size: 34px; font-weight: 800; letter-spacing: -.5px; }
+    .bal-current-card .bc-hist-btn {
+      margin-top: 14px; display: inline-flex; align-items: center; gap: 6px;
+      background: var(--cyan-dim); border: 1px solid rgba(0,212,255,0.25);
+      color: var(--cyan); font-size: 13px; font-weight: 600;
+      padding: 8px 16px; border-radius: 20px; cursor: pointer;
+    }
+
+    .topup-card {
+      margin: 0 14px 10px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 16px; padding: 18px;
+    }
+    .topup-card .tu-label { font-size: 13px; color: var(--text2); margin-bottom: 12px; font-weight: 500; }
+    .topup-input {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 13px 16px;
+      font-size: 18px; font-weight: 700; color: var(--text);
+      outline: none; margin-bottom: 6px;
+    }
+    .topup-input:focus { border-color: rgba(47,128,255,0.5); }
+    .topup-hint { font-size: 12px; color: var(--text3); margin-bottom: 14px; }
+    .btn-pay {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      border: none; border-radius: 14px; color: #fff;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 18px rgba(47,128,255,0.4);
+    }
+    .or-divider { text-align: center; color: var(--text3); font-size: 13px; padding: 10px 0; }
+
+    /* ───── CATCH SCREEN ───── */
+    .catch-header {
+      padding: 14px 18px 0;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .catch-header .ch-title { font-size: 20px; font-weight: 800; }
+    .catch-header .ch-pulse {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(39,201,123,0.5);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%  { box-shadow: 0 0 0 0 rgba(39,201,123,0.5); }
+      70% { box-shadow: 0 0 0 10px rgba(39,201,123,0); }
+      100%{ box-shadow: 0 0 0 0 rgba(39,201,123,0); }
+    }
+
+    .step-card {
+      margin: 10px 14px 0; background: var(--card);
+      border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    }
+    .step-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .9px;
+      color: var(--text3); text-transform: uppercase;
+      padding: 14px 16px 6px;
+    }
+    .step-selected {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px 14px; cursor: pointer;
+    }
+    .step-selected .ss-val { font-size: 16px; font-weight: 700; color: var(--text); }
+    .step-selected .ss-chg { font-size: 13px; color: var(--cyan); font-weight: 600; }
+
+    /* Search */
+    .search-wrap { position: relative; margin: 10px 14px 4px; }
+    .search-wrap input {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 11px 16px 11px 40px;
+      font-size: 15px; color: var(--text); outline: none;
+    }
+    .search-wrap input:focus { border-color: rgba(47,128,255,0.4); }
+    .search-wrap input::placeholder { color: var(--text3); }
+    .search-wrap .search-ico {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      color: var(--text3); font-size: 16px; pointer-events: none;
+    }
+
+    /* List */
+    .list-scroll { max-height: 240px; overflow-y: auto; padding: 4px 0 8px; }
+    .list-item {
+      padding: 12px 18px; cursor: pointer; font-size: 15px; font-weight: 500;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background .15s;
+    }
+    .list-item:active, .list-item.selected { background: var(--blue-dim); }
+    .list-item.selected .li-check { color: var(--cyan); font-size: 18px; }
+    .list-item .li-check { color: transparent; }
+    .li-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
+
+    /* Shift type pills */
+    .shift-pills { display: flex; gap: 8px; padding: 10px 14px 4px; }
+    .shift-pill {
+      flex: 1; padding: 11px 8px; border-radius: 12px;
+      background: var(--card); border: 1px solid var(--border);
+      text-align: center; cursor: pointer; transition: all .18s;
+    }
+    .shift-pill .sp-ico { font-size: 20px; margin-bottom: 3px; }
+    .shift-pill .sp-label { font-size: 11px; color: var(--text2); font-weight: 600; }
+    .shift-pill.active { background: var(--blue-dim); border-color: rgba(47,128,255,0.4); }
+    .shift-pill.active .sp-label { color: var(--blue); }
+
+    /* 7-day calendar */
+    .cal-strip { display: flex; gap: 7px; padding: 10px 14px 4px; overflow-x: auto; scrollbar-width: none; }
+    .cal-strip::-webkit-scrollbar { display: none; }
+    .cal-day {
+      flex-shrink: 0; width: 46px; height: 56px;
+      border-radius: 12px; background: var(--card);
+      border: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; cursor: pointer; transition: all .18s;
+    }
+    .cal-day .cd-dow { font-size: 10px; color: var(--text2); font-weight: 600; text-transform: uppercase; }
+    .cal-day .cd-num { font-size: 17px; font-weight: 800; }
+    .cal-day.active { background: var(--blue-dim); border-color: rgba(47,128,255,0.5); }
+    .cal-day.active .cd-dow { color: var(--cyan); }
+    .cal-day.active .cd-num { color: var(--blue); }
+
+    /* Price row */
+    .price-row {
+      margin: 10px 14px 0; background: var(--card);
+      border: 1px solid rgba(47,128,255,0.2);
+      border-radius: 14px; padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .price-row .pr-label { font-size: 14px; color: var(--text2); }
+    .price-row .pr-val { font-size: 20px; font-weight: 800; color: var(--blue); }
+
+    /* Submit */
+    .submit-wrap { padding: 14px; }
+    .btn-submit {
+      width: 100%; padding: 16px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+      border: none; border-radius: 16px; color: #fff;
+      font-size: 17px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 6px 24px rgba(47,128,255,0.45);
+      letter-spacing: -.2px; position: relative; overflow: hidden;
+    }
+    .btn-submit::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: translateX(-100%);
+      animation: shimmer 2.5s infinite;
+    }
+    @keyframes shimmer { to { transform: translateX(100%); } }
+
+    /* ───── CHAT SCREEN ───── */
+    .chat-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px; padding: 40px;
+    }
+    .chat-empty .ce-icon { font-size: 56px; }
+    .chat-empty .ce-title { font-size: 20px; font-weight: 800; text-align: center; }
+    .chat-empty .ce-sub { font-size: 14px; color: var(--text2); text-align: center; line-height: 1.6; }
+    .btn-support {
+      padding: 13px 28px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      border: none; color: #fff; font-size: 15px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 4px 16px rgba(47,128,255,0.4);
+    }
+
+    /* ───── SETTINGS SCREEN ───── */
+    .settings-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; margin: 0 14px 8px;
+      padding: 15px 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .settings-item .si-left { display: flex; align-items: center; gap: 12px; }
+    .settings-item .si-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .settings-item .si-label { font-size: 15px; font-weight: 600; }
+    .settings-item .si-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .settings-item .si-arrow { color: var(--text3); }
+    .toggle-wrap { display: flex; align-items: center; }
+    .toggle {
+      width: 44px; height: 24px; border-radius: 12px; background: var(--bg3);
+      border: 1px solid var(--border); cursor: pointer; position: relative;
+      transition: background .2s;
+    }
+    .toggle.on { background: var(--blue); }
+    .toggle::after {
+      content: ''; position: absolute;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; top: 2px; left: 2px;
+      transition: transform .2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .toggle.on::after { transform: translateX(20px); }
+
+    .user-card {
+      margin: 10px 14px 16px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 18px; padding: 20px 18px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .user-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; flex-shrink: 0;
+    }
+    .user-info .ui-name { font-size: 17px; font-weight: 700; }
+    .user-info .ui-id { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .user-info .ui-plan {
+      margin-top: 7px; display: inline-flex; align-items: center; gap: 5px;
+      background: var(--blue-dim); border: 1px solid rgba(47,128,255,0.3);
+      color: var(--blue); font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+    }
+
+    /* ───── TOAST ───── */
+    .toast {
+      position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); font-size: 14px; font-weight: 600;
+      padding: 12px 22px; border-radius: 24px; white-space: nowrap;
+      z-index: 999; opacity: 0; transition: all .3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ───── REFERRAL SCREEN ───── */
+    .ref-hero {
+      margin: 10px 14px; background: linear-gradient(135deg, var(--blue-dim), var(--cyan-dim));
+      border: 1px solid rgba(47,128,255,0.25); border-radius: 20px; padding: 24px;
+      text-align: center;
+    }
+    .ref-hero .rh-emoji { font-size: 52px; margin-bottom: 10px; display: block; }
+    .ref-hero .rh-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+    .ref-hero .rh-sub { font-size: 14px; color: var(--text2); line-height: 1.6; }
+    .ref-link-card {
+      margin: 10px 14px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px 18px;
+    }
+    .ref-link-card .rl-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; font-weight: 500; }
+    .ref-link-card .rl-link {
+      font-size: 14px; color: var(--cyan); word-break: break-all; font-weight: 600;
+    }
+    .btn-copy {
+      width: 100%; margin-top: 12px; padding: 13px;
+      background: var(--blue-dim); border: 1px solid rgba(47,128,255,0.3);
+      border-radius: 12px; color: var(--blue); font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    .ref-stats { display: flex; gap: 10px; margin: 0 14px 10px; }
+    .ref-stat-card {
+      flex: 1; background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; text-align: center;
+    }
+    .ref-stat-card .rsc-val { font-size: 24px; font-weight: 800; }
+    .ref-stat-card .rsc-label { font-size: 11px; color: var(--text2); margin-top: 3px; }
+    .ref-rule {
+      margin: 0 14px 8px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 18px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .ref-rule .rr-num {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      background: var(--blue-dim); border: 1px solid rgba(47,128,255,0.3);
+      color: var(--blue); font-size: 14px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ref-rule .rr-text { font-size: 14px; line-height: 1.4; }
+    .ref-rule .rr-text span { color: var(--cyan); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ SCREEN: HOME ══════════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-name">Ozon<span>Shift</span></div>
+    </div>
+    <div class="topbar-badge" id="home-status">● Активен</div>
+  </div>
+
+  <div class="warehouse-pill">
+    <div>
+      <div class="wh-label">Склад</div>
+      <div class="wh-name" id="home-warehouse">Не выбран</div>
+    </div>
+    <div class="wh-help" onclick="goTo('screen-catch')">?</div>
+  </div>
+
+  <div class="balance-block" style="padding: 14px 14px 0;">
+    <div class="card" style="text-align:center;">
+      <div style="margin-bottom:4px;font-size:12px;color:var(--text2);">Текущий баланс</div>
+      <div style="font-size:32px;font-weight:800;margin:8px 0;" id="home-balance">0.00 ₽</div>
+      <div class="bal-actions" style="margin-top:14px;">
+        <div class="btn-hist" onclick="goTo('screen-balance')">История</div>
+        <div class="btn-topup" onclick="goTo('screen-balance')">Пополнить</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-label">Смены</div>
+  <div class="shift-row" onclick="goTo('screen-catch')">
+    <div class="sh-left">
+      <div class="sh-sub">Последняя смена</div>
+      <div class="sh-name" id="home-last-shift">—</div>
+      <div class="sh-date" id="home-last-date">Нет активных смен</div>
+    </div>
+    <div class="sh-right">Пойманные →</div>
+  </div>
+  <div class="catch-row" onclick="goTo('screen-catch')">
+    <div class="cr-label">🎯 Поймать новую смену</div>
+    <div class="cr-price" id="home-price">70 ₽</div>
+  </div>
+
+  <div class="sec-label">Бонусы</div>
+  <div class="bonus-grid">
+    <div class="bonus-card ref" onclick="goTo('screen-ref')">
+      <span class="bc-emoji">👥</span>
+      <div class="bc-title">Рефералы</div>
+      <div class="bc-sub">Приглашения и бонусы</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SCREEN: BALANCE ══════════════════ -->
+<div id="screen-balance" class="screen">
+  <div class="topbar" style="background:transparent;">
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Назад
+    </div>
+  </div>
+  <div class="screen-title">Баланс</div>
+
+  <div class="bal-current-card" style="text-align:center;">
+    <div class="bc-label">Текущий баланс</div>
+    <div class="bc-amount" id="bal-amount" style="margin: 8px 0 14px;">0 ₽</div>
+    <div class="bc-hist-btn" onclick="showToast('📋 История пуста')" style="margin: 0 auto;">
+      📋 История операций
+    </div>
+  </div>
+
+  <div class="topup-card">
+    <div class="tu-label">Пополнение</div>
+    <input class="topup-input" id="topup-input" type="number" value="100" placeholder="Сумма">
+    <div class="topup-hint">Минимальная сумма: 100 ₽</div>
+    <button class="btn-pay" onclick="handleTopup()">Пополнить</button>
+  </div>
+  <div class="or-divider">или</div>
+  <div class="card" style="text-align:center;cursor:pointer;" onclick="goTo('screen-ref')">
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px;">👥 Пригласи друга</div>
+    <div style="font-size:13px;color:var(--text2);">Получи <span style="color:var(--cyan);font-weight:700;">50 ₽</span> за каждого реферала</div>
+  </div>
+</div>
+
+<!-- ══════════════════ SCREEN: CATCH ══════════════════ -->
+<div id="screen-catch" class="screen">
+  <div class="catch-header">
+    <div class="ch-pulse"></div>
+    <div class="ch-title">Поймать смену</div>
+  </div>
+
+  <!-- Warehouse -->
+  <div class="sec-label">Склад</div>
+  <div class="search-wrap">
+    <span class="search-ico">🔍</span>
+    <input id="wh-search" type="text" placeholder="Поиск склада..." oninput="filterWarehouses()">
+  </div>
+  <div class="step-card">
+    <div class="list-scroll" id="wh-list"></div>
+  </div>
+
+  <!-- Process -->
+  <div class="sec-label">Специальность</div>
+  <div class="step-card">
+    <div class="list-scroll" id="proc-list"></div>
+  </div>
+
+  <!-- Shift type -->
+  <div class="sec-label">Тип смены</div>
+  <div class="shift-pills">
+    <div class="shift-pill active" data-shift="day" onclick="selectShift(this)">
+      <div class="sp-ico">☀️</div>
+      <div class="sp-label">Дневная</div>
+    </div>
+    <div class="shift-pill" data-shift="night" onclick="selectShift(this)">
+      <div class="sp-ico">🌙</div>
+      <div class="sp-label">Ночная</div>
+    </div>
+    <div class="shift-pill" data-shift="any" onclick="selectShift(this)">
+      <div class="sp-ico">🔄</div>
+      <div class="sp-label">Любая</div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="sec-label">Дата</div>
+  <div class="cal-strip" id="cal-strip"></div>
+
+  <!-- Price -->
+  <div class="price-row">
+    <div class="pr-label">💎 Стоимость поиска</div>
+    <div class="pr-val">70 ₽</div>
+  </div>
+
+  <!-- Submit -->
+  <div class="submit-wrap">
+    <button class="btn-submit" onclick="submitRequest()">⚡ Запустить поиск</button>
+  </div>
+</div>
+
+<!-- ══════════════════ SCREEN: CHAT ══════════════════ -->
+<div id="screen-chat" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon" style="font-size:16px;">💬</div>
+      <div class="logo-name">Поддержка</div>
+    </div>
+  </div>
+  <div class="chat-empty">
+    <div class="ce-icon">🛸</div>
+    <div class="ce-title">Есть вопросы?</div>
+    <div class="ce-sub">Напишите нам — ответим в течение нескольких минут. Работаем ежедневно.</div>
+    <button class="btn-support" onclick="openSupport()">Написать в поддержку</button>
+  </div>
+</div>
+
+<!-- ══════════════════ SCREEN: SETTINGS ══════════════════ -->
+<div id="screen-settings" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon" style="font-size:16px;">⚙️</div>
+      <div class="logo-name">Настройки</div>
+    </div>
+  </div>
+
+  <div class="user-card" id="user-card">
+    <div class="user-avatar" id="user-avatar">?</div>
+    <div class="user-info">
+      <div class="ui-name" id="user-name">Загрузка...</div>
+      <div class="ui-id" id="user-id">ID: —</div>
+      <div class="ui-plan">⚡ Стандарт</div>
+    </div>
+  </div>
+
+  <div class="sec-label">Уведомления</div>
+  <div class="settings-item">
+    <div class="si-left">
+      <div class="si-icon" style="background:rgba(47,128,255,0.15);">🔔</div>
+      <div>
+        <div class="si-label">Уведомления о сменах</div>
+        <div class="si-sub">Получать оповещения в бот</div>
+      </div>
+    </div>
+    <div class="toggle-wrap"><div class="toggle on" id="notif-toggle" onclick="toggleNotif()"></div></div>
+  </div>
+
+  <div class="sec-label">Аккаунт</div>
+  <div class="settings-item" onclick="goTo('screen-ref')">
+    <div class="si-left">
+      <div class="si-icon" style="background:rgba(0,212,255,0.12);">👥</div>
+      <div>
+        <div class="si-label">Реферальная программа</div>
+        <div class="si-sub">Зарабатывай с друзьями</div>
+      </div>
+    </div>
+    <span class="si-arrow">›</span>
+  </div>
+  <div class="settings-item" onclick="goTo('screen-balance')">
+    <div class="si-left">
+      <div class="si-icon" style="background:rgba(39,201,123,0.12);">💳</div>
+      <div>
+        <div class="si-label">Баланс и оплата</div>
+        <div class="si-sub" id="settings-balance">0 ₽ на счёте</div>
+      </div>
+    </div>
+    <span class="si-arrow">›</span>
+  </div>
+  <div class="settings-item" onclick="showToast('📋 Версия 1.0.0')">
+    <div class="si-left">
+      <div class="si-icon" style="background:rgba(255,184,0,0.12);">ℹ️</div>
+      <div>
+        <div class="si-label">О приложении</div>
+        <div class="si-sub">OzonShift v1.0.0</div>
+      </div>
+    </div>
+    <span class="si-arrow">›</span>
+  </div>
+</div>
+
+<!-- ══════════════════ SCREEN: REFERRAL ══════════════════ -->
+<div id="screen-ref" class="screen">
+  <div class="topbar" style="background:transparent;">
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Назад
+    </div>
+  </div>
+
+  <div class="ref-hero">
+    <span class="rh-emoji">👥</span>
+    <div class="rh-title">Приглашай — зарабатывай</div>
+    <div class="rh-sub">За каждого активного реферала получи <strong style="color:var(--cyan);">50 ₽</strong> на баланс</div>
+  </div>
+
+  <div class="ref-stats">
+    <div class="ref-stat-card">
+      <div class="rsc-val" id="ref-count">0</div>
+      <div class="rsc-label">Рефералов</div>
+    </div>
+    <div class="ref-stat-card">
+      <div class="rsc-val" id="ref-earned">0 ₽</div>
+      <div class="rsc-label">Заработано</div>
+    </div>
+  </div>
+
+  <div class="ref-link-card">
+    <div class="rl-label">Твоя реферальная ссылка</div>
+    <div class="rl-link" id="ref-link">https://t.me/MyOzonAlert_bot?start=ref_...</div>
+    <button class="btn-copy" onclick="copyRef()">📋 Скопировать ссылку</button>
+  </div>
+
+  <div class="sec-label">Как это работает</div>
+  <div class="ref-rule">
+    <div class="rr-num">1</div>
+    <div class="rr-text">Поделись ссылкой с другом-сотрудником Ozon</div>
+  </div>
+  <div class="ref-rule">
+    <div class="rr-num">2</div>
+    <div class="rr-text">Он регистрируется и <span>запускает первый поиск смены</span></div>
+  </div>
+  <div class="ref-rule">
+    <div class="rr-num">3</div>
+    <div class="rr-text">Ты получаешь <span>50 ₽</span> автоматически на баланс</div>
+  </div>
+</div>
+
+<!-- ══════════════════ BOTTOM NAV ══════════════════ -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="goTo('screen-home'); setNav('nav-home')">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    <span class="nav-label">Главная</span>
+  </div>
+  <div class="nav-item" id="nav-balance" onclick="goTo('screen-balance'); setNav('nav-balance')">
+    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+    <span class="nav-label">Баланс</span>
+    <span class="nav-badge" id="nav-bal-badge" style="display:none;">0₽</span>
+  </div>
+  <div class="nav-item nav-center" id="nav-catch" onclick="goTo('screen-catch'); setNav('nav-catch')">
+    <div class="nav-center-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+    </div>
+    <span class="nav-center-label">Поймать</span>
+  </div>
+  <div class="nav-item" id="nav-chat" onclick="goTo('screen-chat'); setNav('nav-chat')">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+    <span class="nav-label">Чат</span>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="goTo('screen-settings'); setNav('nav-settings')">
+    <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+    <span class="nav-label">Настройки</span>
+  </div>
+</nav>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── Telegram WebApp init ───
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  // ─── State ───
+  const state = {
+    screen: 'screen-home',
+    history: [],
+    warehouse: null,
+    process: null,
+    shift: 'day',
+    date: null,
+    balance: 0,
+    refCount: 0,
+    notif: true,
+    user: tg?.initDataUnsafe?.user || null,
+  };
+
+  // ─── Data ───
+  const WAREHOUSES = [
+    // Москва и МО
+    { id: 'msk_khovrino', name: 'Москва — Ховрино', region: 'Москва' },
+    { id: 'msk_sklad', name: 'Москва — Склад МСК', region: 'Москва' },
+    { id: 'mo_elektrostal', name: 'Электросталь', region: 'МО' },
+    { id: 'mo_korolev', name: 'Королёв', region: 'МО' },
+    { id: 'mo_mytishi', name: 'Мытищи', region: 'МО' },
+    { id: 'mo_podolsk', name: 'Подольск', region: 'МО' },
+    { id: 'mo_odintsovo', name: 'Одинцово', region: 'МО' },
+    { id: 'mo_pushkino', name: 'Пушкино', region: 'МО' },
+    { id: 'mo_balashikha', name: 'Балашиха', region: 'МО' },
+    { id: 'mo_khimki', name: 'Химки', region: 'МО' },
+    { id: 'mo_noginsk', name: 'Ногинск', region: 'МО' },
+    // Регионы
+    { id: 'spb', name: 'Санкт-Петербург', region: 'СПб' },
+    { id: 'tver', name: 'Тверь', region: 'Тверская обл.' },
+    { id: 'kazan', name: 'Казань', region: 'Татарстан' },
+    { id: 'ekb', name: 'Екатеринбург', region: 'Свердловская обл.' },
+    { id: 'nsk', name: 'Новосибирск', region: 'Новосибирская обл.' },
+    { id: 'samara', name: 'Самара', region: 'Самарская обл.' },
+    { id: 'krasnodar', name: 'Краснодар', region: 'Краснодарский кр.' },
+    { id: 'rostov', name: 'Ростов-на-Дону', region: 'Ростовская обл.' },
+    { id: 'voronezh', name: 'Воронеж', region: 'Воронежская обл.' },
+    { id: 'nnovgorod', name: 'Нижний Новгород', region: 'Нижегородская обл.' },
+    { id: 'ufa', name: 'Уфа', region: 'Башкортостан' },
+    { id: 'perm', name: 'Пермь', region: 'Пермский кр.' },
+    { id: 'chelyabinsk', name: 'Челябинск', region: 'Челябинская обл.' },
+    { id: 'omsk', name: 'Омск', region: 'Омская обл.' },
+    { id: 'krasnoyarsk', name: 'Красноярск', region: 'Красноярский кр.' },
+    { id: 'irkutsk', name: 'Иркутск', region: 'Иркутская обл.' },
+    { id: 'vladivostok', name: 'Владивосток', region: 'Приморский кр.' },
+    { id: 'khabarovsk', name: 'Хабаровск', region: 'Хабаровский кр.' },
+    { id: 'tula', name: 'Тула', region: 'Тульская обл.' },
+    { id: 'yaroslavl', name: 'Ярославль', region: 'Ярославская обл.' },
+    { id: 'saratov', name: 'Саратов', region: 'Саратовская обл.' },
+    { id: 'togliatti', name: 'Тольятти', region: 'Самарская обл.' },
+    { id: 'izhevsk', name: 'Ижевск', region: 'Удмуртия' },
+    { id: 'barnaul', name: 'Барнаул', region: 'Алтайский кр.' },
+    { id: 'ulyanovsk', name: 'Ульяновск', region: 'Ульяновская обл.' },
+    { id: 'stavropol', name: 'Ставрополь', region: 'Ставропольский кр.' },
+    { id: 'orenburg', name: 'Оренбург', region: 'Оренбургская обл.' },
+    { id: 'lipetsk', name: 'Липецк', region: 'Липецкая обл.' },
+    { id: 'tambov', name: 'Тамбов', region: 'Тамбовская обл.' },
+    { id: 'rязань', name: 'Рязань', region: 'Рязанская обл.' },
+    { id: 'penza', name: 'Пенза', region: 'Пензенская обл.' },
+    { id: 'kirov', name: 'Киров', region: 'Кировская обл.' },
+  ];
+
+  const PROCESSES = [
+    { id: 'pick', name: 'Подбор', desc: 'Сборка заказов' },
+    { id: 'place', name: 'Размещение', desc: 'Расстановка товаров' },
+    { id: 'sort', name: 'Сортировка', desc: 'Распределение посылок' },
+    { id: 'pack', name: 'Упаковка', desc: 'Упаковка заказов' },
+    { id: 'receive', name: 'Приёмка', desc: 'Приём и проверка товаров' },
+    { id: 'complete', name: 'Комплектация', desc: 'Формирование наборов' },
+    { id: 'inventory', name: 'Инвентаризация', desc: 'Учёт остатков' },
+    { id: 'ship', name: 'Отгрузка', desc: 'Отправка заказов' },
+    { id: 'stacker', name: 'Водитель штабелёра', desc: 'Управление техникой' },
+    { id: 'returns', name: 'Возвраты', desc: 'Обработка возвратов' },
+    { id: 'marking', name: 'Маркировка', desc: 'Нанесение этикеток' },
+    { id: 'facility', name: 'Хоз. обеспечение', desc: 'Хозяйственные работы' },
+    { id: 'control', name: 'Контроль качества', desc: 'Проверка товаров' },
+    { id: 'crossdock', name: 'Кросс-докинг', desc: 'Перегрузка без хранения' },
+    { id: 'forklift', name: 'Водитель погрузчика', desc: 'Работа на вилочном погрузчике' },
+  ];
+
+  // ─── Init ───
+  function init() {
+    buildWarehouses();
+    buildProcesses();
+    buildCalendar();
+    updateUserCard();
+    updateRefLink();
+  }
+
+  function updateUserCard() {
+    if (state.user) {
+      const name = [state.user.first_name, state.user.last_name].filter(Boolean).join(' ') || state.user.username || 'Пользователь';
+      document.getElementById('user-name').textContent = name;
+      document.getElementById('user-id').textContent = 'ID: ' + state.user.id;
+      document.getElementById('user-avatar').textContent = (name[0] || '?').toUpperCase();
+      const refId = state.user.id || '000000';
+      document.getElementById('ref-link').textContent = 'https://t.me/MyOzonAlert_bot?start=ref_' + refId;
+    }
+  }
+
+  function updateRefLink() {
+    const refId = state.user?.id || '000000';
+    document.getElementById('ref-link').textContent = 'https://t.me/MyOzonAlert_bot?start=ref_' + refId;
+  }
+
+  // ─── Navigation ───
+  function goTo(screenId) {
+    haptic('light');
+    if (state.screen !== screenId) state.history.push(state.screen);
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+    state.screen = screenId;
+    // Sync nav active state
+    const navMap = {
+      'screen-home': 'nav-home',
+      'screen-balance': 'nav-balance',
+      'screen-catch': 'nav-catch',
+      'screen-chat': 'nav-chat',
+      'screen-settings': 'nav-settings',
+    };
+    if (navMap[screenId]) setNav(navMap[screenId]);
+  }
+
+  function goBack() {
+    haptic('light');
+    const prev = state.history.pop() || 'screen-home';
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(prev).classList.add('active');
+    state.screen = prev;
+  }
+
+  function setNav(navId) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(navId)?.classList.add('active');
+  }
+
+  // ─── Warehouse list ───
+  function buildWarehouses(filter = '') {
+    const list = document.getElementById('wh-list');
+    const f = filter.toLowerCase();
+    const filtered = WAREHOUSES.filter(w =>
+      w.name.toLowerCase().includes(f) || w.region.toLowerCase().includes(f)
+    );
+    list.innerHTML = filtered.map(w => `
+      <div class="list-item ${state.warehouse?.id === w.id ? 'selected' : ''}"
+           onclick="selectWarehouse('${w.id}')">
+        <div>
+          <div>${w.name}</div>
+          <div class="li-sub">${w.region}</div>
+        </div>
+        <span class="li-check">✓</span>
+      </div>
+    `).join('');
+  }
+
+  function filterWarehouses() {
+    buildWarehouses(document.getElementById('wh-search').value);
+  }
+
+  function selectWarehouse(id) {
+    haptic('selection');
+    state.warehouse = WAREHOUSES.find(w => w.id === id);
+    document.getElementById('home-warehouse').textContent = state.warehouse?.name || '—';
+    buildWarehouses(document.getElementById('wh-search').value);
+  }
+
+  // ─── Process list ───
+  function buildProcesses() {
+    const list = document.getElementById('proc-list');
+    list.innerHTML = PROCESSES.map(p => `
+      <div class="list-item ${state.process?.id === p.id ? 'selected' : ''}"
+           onclick="selectProcess('${p.id}')">
+        <div>
+          <div>${p.name}</div>
+          <div class="li-sub">${p.desc}</div>
+        </div>
+        <span class="li-check">✓</span>
+      </div>
+    `).join('');
+  }
+
+  function selectProcess(id) {
+    haptic('selection');
+    state.process = PROCESSES.find(p => p.id === id);
+    buildProcesses();
+  }
+
+  // ─── Shift type ───
+  function selectShift(el) {
+    haptic('light');
+    document.querySelectorAll('.shift-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    state.shift = el.dataset.shift;
+  }
+
+  // ─── Calendar ───
+  function buildCalendar() {
+    const strip = document.getElementById('cal-strip');
+    const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const today = new Date();
+    strip.innerHTML = '';
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const iso = d.toISOString().slice(0, 10);
+      const isActive = i === 0;
+      if (i === 0) state.date = iso;
+      const el = document.createElement('div');
+      el.className = 'cal-day' + (isActive ? ' active' : '');
+      el.dataset.date = iso;
+      el.innerHTML = `<div class="cd-dow">${days[d.getDay()]}</div><div class="cd-num">${d.getDate()}</div>`;
+      el.onclick = () => selectDate(el, iso);
+      strip.appendChild(el);
+    }
+  }
+
+  function selectDate(el, iso) {
+    haptic('light');
+    document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    state.date = iso;
+  }
+
+  // ─── Submit ───
+  function submitRequest() {
+    if (!state.warehouse) { showToast('⚠️ Выбери склад'); haptic('error'); return; }
+    if (!state.process)   { showToast('⚠️ Выбери специальность'); haptic('error'); return; }
+
+    const payload = {
+      warehouse_id: state.warehouse.id,
+      warehouse_name: state.warehouse.name,
+      process_id: state.process.id,
+      process_name: state.process.name,
+      shift_time: state.shift,
+      target_date: state.date,
+    };
+
+    if (tg) {
+      tg.sendData(JSON.stringify(payload));
+      haptic('success');
+    } else {
+      // Browser preview mode
+      showToast('✅ Данные отправлены (превью)');
+      console.log('Payload:', payload);
+    }
+  }
+
+  // ─── Balance / Topup ───
+  function handleTopup() {
+    const amount = parseInt(document.getElementById('topup-input').value) || 0;
+    if (amount < 100) { showToast('⚠️ Минимум 100 ₽'); haptic('error'); return; }
+    haptic('success');
+    showToast('💳 Переход к оплате...');
+    // Here would open payment link
+  }
+
+  // ─── Notifications toggle ───
+  function toggleNotif() {
+    state.notif = !state.notif;
+    const t = document.getElementById('notif-toggle');
+    t.classList.toggle('on', state.notif);
+    haptic('light');
+    showToast(state.notif ? '🔔 Уведомления включены' : '🔕 Уведомления выключены');
+  }
+
+  // ─── Referral ───
+  function copyRef() {
+    const link = document.getElementById('ref-link').textContent;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(link).then(() => showToast('✅ Ссылка скопирована'));
+    } else {
+      showToast('✅ Скопировано');
+    }
+    haptic('success');
+  }
+
+  // ─── Support ───
+  function openSupport() {
+    if (tg) tg.openTelegramLink('https://t.me/MyOzonAlert_bot');
+    else window.open('https://t.me/MyOzonAlert_bot', '_blank');
+  }
+
+  // ─── Toast ───
+  function showToast(msg, duration = 2200) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  // ─── Haptic ───
+  function haptic(type) {
+    if (!tg?.HapticFeedback) return;
+    if (type === 'light' || type === 'selection') tg.HapticFeedback.impactOccurred('light');
+    else if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+    else if (type === 'error') tg.HapticFeedback.notificationOccurred('error');
+  }
+
+  // ─── WebApp data from bot (balance update etc) ───
+  if (tg) {
+    tg.onEvent('web_app_data', (data) => {
+      try {
+        const d = JSON.parse(data.data);
+        if (d.balance !== undefined) {
+          state.balance = d.balance;
+          document.getElementById('home-balance').textContent = d.balance.toFixed(2) + ' ₽';
+          document.getElementById('bal-amount').textContent = d.balance.toFixed(0) + ' ₽';
+          document.getElementById('settings-balance').textContent = d.balance.toFixed(0) + ' ₽ на счёте';
+        }
+        if (d.last_shift) {
+          document.getElementById('home-last-shift').textContent = d.last_shift.warehouse || '—';
+          document.getElementById('home-last-date').textContent = d.last_shift.date || '';
+        }
+        if (d.ref_count !== undefined) {
+          document.getElementById('ref-count').textContent = d.ref_count;
+          document.getElementById('ref-earned').textContent = (d.ref_count * 50) + ' ₽';
+        }
+      } catch(e) {}
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
