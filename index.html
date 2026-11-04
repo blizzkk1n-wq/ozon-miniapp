@@ -1555,26 +1555,23 @@
     showToast('⚡ Отправка заявки...');
     haptic('success');
 
-    // 1. Попытка нативного tg.sendData (если открыто через кнопку клавиатуры)
     try {
       if (tg && typeof tg.sendData === 'function') {
         tg.sendData(JSON.stringify(payload));
+        return;
       }
     } catch(e) {
       console.warn('sendData error:', e);
     }
 
-    // 2. Фоллбэк: прямой deep-link бота (срабатывает из кнопки меню и инлайн)
-    setTimeout(() => {
-      const slug = 'req_' + [state.warehouse.id, state.process.id, state.shift, state.date].join('__');
-      const botUrl = 'https://t.me/ozonday_bot?start=' + slug;
-      if (tg && tg.openTelegramLink) {
-        tg.openTelegramLink(botUrl);
-        if (tg.close) tg.close();
-      } else {
-        window.location.href = botUrl;
-      }
-    }, 250);
+    const slug = 'req_' + [state.warehouse.id, state.process.id, state.shift, state.date].join('__');
+    const botUrl = 'https://t.me/ozonday_bot?start=' + slug;
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink(botUrl);
+      if (tg.close) tg.close();
+    } else {
+      window.location.href = botUrl;
+    }
   }
 
   // ─── Balance / Topup ───
@@ -1632,6 +1629,14 @@
         return;
       }
       showToast('🔄 Активация ключа...');
+      try {
+        if (tg && typeof tg.sendData === 'function') {
+          tg.sendData(JSON.stringify({ action: 'activate_key', key: code }));
+          return;
+        }
+      } catch (e) {
+        console.warn('sendData error:', e);
+      }
       const botUrl = 'https://t.me/ozonday_bot?start=key_' + encodeURIComponent(code);
       if (tg && tg.openTelegramLink) {
         tg.openTelegramLink(botUrl);
@@ -1649,6 +1654,18 @@
     }
 
     showToast(`🔄 Создание счёта на ${selectedPayAmount} ₽...`);
+    try {
+      if (tg && typeof tg.sendData === 'function') {
+        tg.sendData(JSON.stringify({
+          action: 'create_payment',
+          method: selectedPayMethod,
+          amount: selectedPayAmount
+        }));
+        return;
+      }
+    } catch (e) {
+      console.warn('sendData error:', e);
+    }
     const payUrl = `https://t.me/ozonday_bot?start=pay_${selectedPayMethod}_${selectedPayAmount}`;
     if (tg && tg.openTelegramLink) {
       tg.openTelegramLink(payUrl);
