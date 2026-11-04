@@ -491,6 +491,46 @@
     }
     .ref-rule .rr-text { font-size: 14px; line-height: 1.4; }
     .ref-rule .rr-text span { color: var(--cyan); font-weight: 700; }
+
+    /* ───── AUTH SCREEN ───── */
+    .auth-header { text-align: center; padding: 20px 20px 10px; }
+    .auth-logo { width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 14px; box-shadow: 0 4px 20px rgba(47,128,255,0.4); }
+    .auth-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .auth-sub { font-size: 13px; color: var(--text2); line-height: 1.5; max-width: 320px; margin: 0 auto; }
+    .phone-input-wrap { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: 14px; padding: 4px 14px; margin-top: 10px; }
+    .phone-prefix { font-size: 16px; font-weight: 700; color: var(--cyan); white-space: nowrap; }
+    .phone-input { flex: 1; background: transparent; border: none; outline: none; font-size: 18px; font-weight: 700; color: var(--text); padding: 12px 4px; }
+    .code-input { width: 100%; text-align: center; font-size: 30px; font-weight: 800; letter-spacing: 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 14px; padding: 14px; color: var(--cyan); outline: none; margin-top: 10px; }
+    .code-input:focus { border-color: rgba(0,212,255,0.5); }
+    .auth-banner { margin: 10px 14px 0; background: linear-gradient(135deg, rgba(47,128,255,0.12), rgba(0,212,255,0.06)); border: 1px solid rgba(0,212,255,0.25); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .auth-banner-left { display: flex; align-items: center; gap: 12px; }
+    .auth-banner-ico { width: 38px; height: 38px; border-radius: 12px; background: var(--blue-dim); display: flex; align-items: center; justify-content: center; font-size: 19px; }
+
+  
+    .wh-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 6px; vertical-align: middle; }
+    .wh-badge.rfc { background: rgba(47,128,255,0.2); color: var(--blue); }
+    .wh-badge.pharm { background: rgba(0,212,255,0.2); color: var(--cyan); }
+    .wh-badge.mini { background: rgba(255,184,0,0.2); color: var(--gold); }
+    .wh-badge.hub { background: rgba(39,201,123,0.2); color: var(--green); }
+
+  
+    .btn-change-wh {
+      background: var(--blue-dim);
+      border: 1px solid rgba(47,128,255,0.3);
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+    .btn-change-wh:active {
+      transform: scale(0.95);
+      background: rgba(47,128,255,0.3);
+    }
+
   </style>
 </head>
 <body>
@@ -505,16 +545,33 @@
     <div class="topbar-badge" id="home-status">● Активен</div>
   </div>
 
-  <div class="warehouse-pill">
-    <div>
-      <div class="wh-label">Склад</div>
-      <div class="wh-name" id="home-warehouse">Не выбран</div>
+    <!-- Auth banner -->
+  <div class="auth-banner" id="home-auth-banner" onclick="goTo('screen-auth')">
+    <div class="auth-banner-left">
+      <div class="auth-banner-ico">🔑</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;" id="auth-banner-title">Привязать OzonJob</div>
+        <div style="font-size:12px;color:var(--text2);" id="auth-banner-sub">Введите номер для автозаписи</div>
+      </div>
     </div>
-    <div class="wh-help" onclick="goTo('screen-catch')">?</div>
+    <div style="color:var(--cyan);font-weight:700;font-size:14px;">Войти →</div>
   </div>
 
-  <div class="balance-block" style="padding: 14px 14px 0;">
-    <div class="card" style="text-align:center;">
+      <!-- Warehouse Card -->
+  <div class="warehouse-pill" style="margin: 8px 14px 0; padding: 12px 16px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="flex:1; min-width:0; padding-right:10px;">
+      <div class="wh-label" style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+        <span>Ваш рабочий склад</span>
+        <span id="home-wh-badge" class="wh-badge rfc" style="display:none;">РФЦ</span>
+      </div>
+      <div class="wh-name" id="home-warehouse" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:16px;">Тверь — Крупный склад</div>
+      <div class="li-sub" id="home-wh-region" style="margin-top:2px; font-size:11px;">Тверская обл., Боровлёво-2</div>
+    </div>
+    <button class="btn-change-wh" onclick="changeWarehouse()">Изменить</button>
+  </div>
+
+  <!-- Balance Card (Компактный аккуратный отступ 8px) -->
+  <div class="card" style="margin: 8px 14px 0; padding: 14px 18px; text-align:center;">
       <div style="margin-bottom:4px;font-size:12px;color:var(--text2);">Текущий баланс</div>
       <div style="font-size:32px;font-weight:800;margin:8px 0;" id="home-balance">0.00 ₽</div>
       <div class="bal-actions" style="margin-top:14px;">
@@ -522,7 +579,6 @@
         <div class="btn-topup" onclick="goTo('screen-balance')">Пополнить</div>
       </div>
     </div>
-  </div>
 
   <div class="sec-label">Смены</div>
   <div class="shift-row" onclick="goTo('screen-catch')">
@@ -762,6 +818,70 @@
 </div>
 
 <!-- ══════════════════ BOTTOM NAV ══════════════════ -->
+<!-- ══════════════════ SCREEN: AUTH ══════════════════ -->
+<div id="screen-auth" class="screen">
+  <div class="topbar" style="background:transparent;">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Назад
+    </div>
+  </div>
+
+  <!-- STEP 1: Phone -->
+  <div id="auth-step-1">
+    <div class="auth-header">
+      <div class="auth-logo">⚡</div>
+      <div class="auth-title">Привязка OzonJob</div>
+      <div class="auth-sub">Введите номер телефона, чтобы бот мог автоматически бронировать смены на ваш профиль</div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">Номер телефона OzonJob</div>
+      <div class="phone-input-wrap">
+        <div class="phone-prefix">🇷🇺 +7</div>
+        <input type="tel" id="auth-phone" class="phone-input" placeholder="999 123 45 67" maxlength="13">
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;">Мы отправим официальный проверочный код от Ozon</div>
+      <button class="btn-submit" style="margin-top:16px;" onclick="requestPhoneCode()">📲 Получить СМС-код</button>
+    </div>
+
+    <div class="sec-label">Безопасность</div>
+    <div class="card" style="display:flex;align-items:center;gap:12px;">
+      <div style="font-size:24px;">🛡️</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5;">
+        Авторизация происходит напрямую в официальном приложении <b>OzonJob</b>. Ваши данные полностью защищены.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: SMS Code -->
+  <div id="auth-step-2" style="display:none;">
+    <div class="auth-header">
+      <div class="auth-logo">📩</div>
+      <div class="auth-title">Введите код из СМС</div>
+      <div class="auth-sub">Мы отправили проверочный код от Ozon на номер <b id="auth-sent-phone" style="color:var(--cyan);">+7</b></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;text-align:center;">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;">Проверочный код</div>
+      <input type="number" id="auth-code" class="code-input" placeholder="0000" maxlength="6">
+      <div style="font-size:12px;color:var(--text3);margin-top:10px;">Код может прийти в СМС или звонком-сбросом</div>
+      <button class="btn-submit" style="margin-top:18px;" onclick="submitSmsCode()">✅ Подтвердить вход</button>
+      <div style="margin-top:16px;font-size:13px;color:var(--cyan);cursor:pointer;" onclick="changeAuthPhone()">← Изменить номер телефона</div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Success -->
+  <div id="auth-step-3" style="display:none;text-align:center;padding:40px 20px;">
+    <div style="font-size:64px;margin-bottom:16px;">🎉</div>
+    <div style="font-size:22px;font-weight:800;margin-bottom:8px;">Аккаунт OzonJob привязан!</div>
+    <div style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:24px;" id="auth-success-desc">
+      Система готова автоматически бронировать для вас свободные слоты на выбранных складах.
+    </div>
+    <button class="btn-submit" onclick="finishAuth()">⚡ Перейти к поиску смен</button>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <div class="nav-item active" id="nav-home" onclick="goTo('screen-home'); setNav('nav-home')">
     <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -811,52 +931,208 @@
   };
 
   // ─── Data ───
-  const WAREHOUSES = [
-    // Москва и МО
-    { id: 'msk_khovrino', name: 'Москва — Ховрино', region: 'Москва' },
-    { id: 'msk_sklad', name: 'Москва — Склад МСК', region: 'Москва' },
-    { id: 'mo_elektrostal', name: 'Электросталь', region: 'МО' },
-    { id: 'mo_korolev', name: 'Королёв', region: 'МО' },
-    { id: 'mo_mytishi', name: 'Мытищи', region: 'МО' },
-    { id: 'mo_podolsk', name: 'Подольск', region: 'МО' },
-    { id: 'mo_odintsovo', name: 'Одинцово', region: 'МО' },
-    { id: 'mo_pushkino', name: 'Пушкино', region: 'МО' },
-    { id: 'mo_balashikha', name: 'Балашиха', region: 'МО' },
-    { id: 'mo_khimki', name: 'Химки', region: 'МО' },
-    { id: 'mo_noginsk', name: 'Ногинск', region: 'МО' },
-    // Регионы
-    { id: 'spb', name: 'Санкт-Петербург', region: 'СПб' },
-    { id: 'tver', name: 'Тверь', region: 'Тверская обл.' },
-    { id: 'kazan', name: 'Казань', region: 'Татарстан' },
-    { id: 'ekb', name: 'Екатеринбург', region: 'Свердловская обл.' },
-    { id: 'nsk', name: 'Новосибирск', region: 'Новосибирская обл.' },
-    { id: 'samara', name: 'Самара', region: 'Самарская обл.' },
-    { id: 'krasnodar', name: 'Краснодар', region: 'Краснодарский кр.' },
-    { id: 'rostov', name: 'Ростов-на-Дону', region: 'Ростовская обл.' },
-    { id: 'voronezh', name: 'Воронеж', region: 'Воронежская обл.' },
-    { id: 'nnovgorod', name: 'Нижний Новгород', region: 'Нижегородская обл.' },
-    { id: 'ufa', name: 'Уфа', region: 'Башкортостан' },
-    { id: 'perm', name: 'Пермь', region: 'Пермский кр.' },
-    { id: 'chelyabinsk', name: 'Челябинск', region: 'Челябинская обл.' },
-    { id: 'omsk', name: 'Омск', region: 'Омская обл.' },
-    { id: 'krasnoyarsk', name: 'Красноярск', region: 'Красноярский кр.' },
-    { id: 'irkutsk', name: 'Иркутск', region: 'Иркутская обл.' },
-    { id: 'vladivostok', name: 'Владивосток', region: 'Приморский кр.' },
-    { id: 'khabarovsk', name: 'Хабаровск', region: 'Хабаровский кр.' },
-    { id: 'tula', name: 'Тула', region: 'Тульская обл.' },
-    { id: 'yaroslavl', name: 'Ярославль', region: 'Ярославская обл.' },
-    { id: 'saratov', name: 'Саратов', region: 'Саратовская обл.' },
-    { id: 'togliatti', name: 'Тольятти', region: 'Самарская обл.' },
-    { id: 'izhevsk', name: 'Ижевск', region: 'Удмуртия' },
-    { id: 'barnaul', name: 'Барнаул', region: 'Алтайский кр.' },
-    { id: 'ulyanovsk', name: 'Ульяновск', region: 'Ульяновская обл.' },
-    { id: 'stavropol', name: 'Ставрополь', region: 'Ставропольский кр.' },
-    { id: 'orenburg', name: 'Оренбург', region: 'Оренбургская обл.' },
-    { id: 'lipetsk', name: 'Липецк', region: 'Липецкая обл.' },
-    { id: 'tambov', name: 'Тамбов', region: 'Тамбовская обл.' },
-    { id: 'rязань', name: 'Рязань', region: 'Рязанская обл.' },
-    { id: 'penza', name: 'Пенза', region: 'Пензенская обл.' },
-    { id: 'kirov', name: 'Киров', region: 'Кировская обл.' },
+      const WAREHOUSES = [
+    // ───── ТВЕРСКАЯ ОБЛАСТЬ (Объекты OzonJob) ─────
+    {
+      id: 'tver_rfc',
+      name: 'Тверь — Крупный склад',
+      region: 'Тверская обл., Боровлёво-2',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'marking', 'facility', 'control', 'crossdock', 'forklift']
+    },
+    {
+      id: 'tver_pharmacy',
+      name: 'Тверь — Аптека Боровлёво',
+      region: 'Тверская обл., Боровлёво-1',
+      type: 'Аптека',
+      processes: ['pick', 'pack', 'receive', 'complete', 'marking', 'inventory', 'control']
+    },
+    {
+      id: 'tver_kalinina',
+      name: 'Тверь — Калинина Мини-склад',
+      region: 'Тверь, ул. Калинина',
+      type: 'Мини-склад',
+      processes: ['pick', 'pack', 'receive', 'ship', 'inventory']
+    },
+    {
+      id: 'tver_hub',
+      name: 'Тверь — Хаб Коняевская',
+      region: 'Тверь, Коняевская',
+      type: 'Хаб СЦ',
+      processes: ['sort', 'receive', 'ship', 'forklift', 'facility']
+    },
+
+    // ───── МОСКВА И МОСКОВСКАЯ ОБЛАСТЬ (Крупные РФЦ и Хабы) ─────
+    {
+      id: 'mo_khorugvino_rfc',
+      name: 'Хоругвино (Крупный склад)',
+      region: 'МО, Солнечногорск',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'marking', 'facility', 'control', 'forklift']
+    },
+    {
+      id: 'mo_khorugvino_negabarit',
+      name: 'Хоругвино (Негабарит)',
+      region: 'МО, Солнечногорск',
+      type: 'РФЦ',
+      processes: ['place', 'receive', 'ship', 'stacker', 'forklift', 'facility']
+    },
+    {
+      id: 'mo_petrovskoe',
+      name: 'Петровское (Крупный склад)',
+      region: 'МО, Наро-Фоминск',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'marking', 'facility', 'control', 'forklift']
+    },
+    {
+      id: 'mo_domodedovo_rfc',
+      name: 'Домодедово (Крупный склад)',
+      region: 'МО, Домодедово',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'marking', 'facility', 'control', 'forklift']
+    },
+    {
+      id: 'mo_domodedovo_north',
+      name: 'Домодедово (Север Хаб)',
+      region: 'МО, Домодедово',
+      type: 'Хаб СЦ',
+      processes: ['sort', 'receive', 'ship', 'forklift', 'facility']
+    },
+    {
+      id: 'mo_novariga',
+      name: 'Новая Рига (Крупный склад)',
+      region: 'МО, Истра',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'marking', 'facility', 'control', 'forklift']
+    },
+    {
+      id: 'mo_chashnikovo',
+      name: 'Чашниково',
+      region: 'МО, Солнечногорск',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'forklift']
+    },
+    {
+      id: 'mo_sofino',
+      name: 'Софьино (Крупный склад)',
+      region: 'МО, Раменское',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'facility', 'forklift']
+    },
+    {
+      id: 'mo_zhukovsky',
+      name: 'Жуковский (Хаб)',
+      region: 'МО, Жуковский',
+      type: 'Хаб СЦ',
+      processes: ['sort', 'receive', 'ship', 'forklift', 'facility']
+    },
+    {
+      id: 'mo_grivno',
+      name: 'Гривно (Климовск)',
+      region: 'МО, Подольск',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'inventory', 'ship', 'stacker']
+    },
+    {
+      id: 'mo_obukhovo',
+      name: 'Обухово',
+      region: 'МО, Ногинск',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'inventory', 'ship', 'stacker']
+    },
+    {
+      id: 'msk_khovrino',
+      name: 'Москва — Ховрино',
+      region: 'Москва',
+      type: 'Мини-склад',
+      processes: ['pick', 'pack', 'receive', 'ship', 'inventory']
+    },
+    {
+      id: 'mo_elektrostal',
+      name: 'Электросталь',
+      region: 'МО',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker']
+    },
+    {
+      id: 'mo_podolsk',
+      name: 'Подольск',
+      region: 'МО',
+      type: 'Мини-склад',
+      processes: ['pick', 'pack', 'receive', 'ship', 'inventory']
+    },
+    {
+      id: 'mo_pushkino',
+      name: 'Пушкино',
+      region: 'МО',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'inventory', 'ship', 'stacker']
+    },
+
+    // ───── КРУПНЫЕ РЕГИОНАЛЬНЫЕ ХАБЫ ─────
+    {
+      id: 'spb_shushary',
+      name: 'Санкт-Петербург — Шушары',
+      region: 'СПб',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
+    {
+      id: 'kazan',
+      name: 'Казань — Зеленодольск',
+      region: 'Татарстан',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
+    {
+      id: 'ekb',
+      name: 'Екатеринбург — Кольцово',
+      region: 'Свердловская обл.',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
+    {
+      id: 'nsk',
+      name: 'Новосибирск',
+      region: 'Новосибирская обл.',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
+    {
+      id: 'samara',
+      name: 'Самара — Чапаевск',
+      region: 'Самарская обл.',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
+    {
+      id: 'rostov',
+      name: 'Ростов-на-Дону',
+      region: 'Ростовская обл.',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
+    {
+      id: 'voronezh',
+      name: 'Воронеж',
+      region: 'Воронежская обл.',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
+    {
+      id: 'nnovgorod',
+      name: 'Нижний Новгород',
+      region: 'Нижегородская обл.',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
+    {
+      id: 'ufa',
+      name: 'Уфа',
+      region: 'Башкортостан',
+      type: 'РФЦ',
+      processes: ['pick', 'place', 'sort', 'pack', 'receive', 'complete', 'inventory', 'ship', 'stacker', 'returns', 'forklift']
+    },
   ];
 
   const PROCESSES = [
@@ -884,7 +1160,10 @@
     buildCalendar();
     updateUserCard();
     updateRefLink();
-    selectWarehouse('tver');
+        // Восстанавливаем сохраненный склад пользователя
+    const savedWhId = localStorage.getItem('my_saved_warehouse_id') || 'tver_rfc';
+    selectWarehouse(savedWhId, false);
+    updateHomeWarehouseDisplay();
     selectProcess('pick');
   }
 
@@ -936,39 +1215,102 @@
   }
 
   // ─── Warehouse list ───
-  function buildWarehouses(filter = '') {
+    function buildWarehouses(filter = '') {
     const list = document.getElementById('wh-list');
     const f = filter.toLowerCase();
     const filtered = WAREHOUSES.filter(w =>
-      w.name.toLowerCase().includes(f) || w.region.toLowerCase().includes(f)
+      w.name.toLowerCase().includes(f) || w.region.toLowerCase().includes(f) || (w.type && w.type.toLowerCase().includes(f))
     );
-    list.innerHTML = filtered.map(w => `
+    list.innerHTML = filtered.map(w => {
+      let bClass = 'rfc';
+      if (w.type === 'Аптека') bClass = 'pharm';
+      else if (w.type === 'Мини-склад') bClass = 'mini';
+      else if (w.type === 'Хаб СЦ') bClass = 'hub';
+      
+      return `
       <div class="list-item ${state.warehouse?.id === w.id ? 'selected' : ''}"
            onclick="selectWarehouse('${w.id}')">
         <div>
-          <div>${w.name}</div>
-          <div class="li-sub">${w.region}</div>
+          <div>
+            ${w.name}
+            ${w.type ? `<span class="wh-badge ${bClass}">${w.type}</span>` : ''}
+          </div>
+          <div class="li-sub">${w.region} • ${w.processes ? w.processes.length + ' операций' : 'Все операции'}</div>
         </div>
         <span class="li-check">✓</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function filterWarehouses() {
     buildWarehouses(document.getElementById('wh-search').value);
   }
 
-  function selectWarehouse(id) {
+    function updateHomeWarehouseDisplay() {
+    if (!state.warehouse) return;
+    const nameEl = document.getElementById('home-warehouse');
+    if (nameEl) nameEl.textContent = state.warehouse.name;
+
+    const badgeEl = document.getElementById('home-wh-badge');
+    if (badgeEl) {
+      if (state.warehouse.type) {
+        badgeEl.textContent = state.warehouse.type;
+        badgeEl.style.display = 'inline-block';
+        badgeEl.className = 'wh-badge ' + (state.warehouse.type === 'Аптека' ? 'pharm' : (state.warehouse.type === 'Мини-склад' ? 'mini' : (state.warehouse.type === 'Хаб СЦ' ? 'hub' : 'rfc')));
+      } else {
+        badgeEl.style.display = 'none';
+      }
+    }
+
+    const regEl = document.getElementById('home-wh-region');
+    if (regEl) {
+      if (state.warehouse.region) {
+        regEl.textContent = state.warehouse.region;
+        regEl.style.display = 'block';
+      } else {
+        regEl.style.display = 'none';
+      }
+    }
+  }
+
+  function selectWarehouse(id, persist = true) {
     haptic('selection');
-    state.warehouse = WAREHOUSES.find(w => w.id === id);
-    document.getElementById('home-warehouse').textContent = state.warehouse?.name || '—';
-    buildWarehouses(document.getElementById('wh-search').value);
+    state.warehouse = WAREHOUSES.find(w => w.id === id) || WAREHOUSES[0];
+    if (persist) {
+      localStorage.setItem('my_saved_warehouse_id', state.warehouse.id);
+    }
+    updateHomeWarehouseDisplay();
+    buildWarehouses(document.getElementById('wh-search')?.value || '');
+    buildProcesses();
+  }
+
+  function changeWarehouse() {
+    haptic('light');
+    goTo('screen-catch');
+    setTimeout(() => {
+      const search = document.getElementById('wh-search');
+      if (search) {
+        search.scrollIntoView({ behavior: 'smooth' });
+        search.focus();
+      }
+    }, 200);
   }
 
   // ─── Process list ───
-  function buildProcesses() {
+    function buildProcesses() {
     const list = document.getElementById('proc-list');
-    list.innerHTML = PROCESSES.map(p => `
+    const allowed = state.warehouse?.processes;
+    const available = allowed
+      ? PROCESSES.filter(p => allowed.includes(p.id))
+      : PROCESSES;
+
+    // Если выбранный процесс недоступен на складе - выбираем первый доступный
+    if (state.process && !available.some(p => p.id === state.process.id)) {
+      state.process = available[0] || null;
+    }
+
+    list.innerHTML = available.map(p => `
       <div class="list-item ${state.process?.id === p.id ? 'selected' : ''}"
            onclick="selectProcess('${p.id}')">
         <div>
@@ -1045,6 +1387,7 @@
       shift_time: state.shift,
       target_date: state.date,
     };
+    localStorage.setItem('my_saved_warehouse_id', state.warehouse.id);
 
     showToast('⚡ Отправка заявки...');
     haptic('success');
@@ -1145,6 +1488,94 @@
     });
   }
 
+
+  // ─── Auth State & Handlers ───
+  state.phone = localStorage.getItem('ozon_phone') || '';
+  state.pending_phone = '';
+
+  function updateAuthUI() {
+    if (state.phone) {
+      const banner = document.getElementById('home-auth-banner');
+      if (banner) {
+        banner.style.background = 'rgba(39,201,123,0.07)';
+        banner.style.borderColor = 'rgba(39,201,123,0.3)';
+        const title = document.getElementById('auth-banner-title');
+        if (title) {
+          title.textContent = '✅ OzonJob подключён';
+          title.style.color = 'var(--green)';
+        }
+        const sub = document.getElementById('auth-banner-sub');
+        if (sub) {
+          sub.textContent = '+7 ' + state.phone;
+        }
+      }
+    }
+  }
+
+  function requestPhoneCode() {
+    const raw = document.getElementById('auth-phone').value.replace(/\D/g, '');
+    if (raw.length < 10) {
+      showToast('⚠️ Введите 10 цифр номера');
+      haptic('error');
+      return;
+    }
+    const phone10 = raw.slice(-10);
+    state.pending_phone = phone10;
+    document.getElementById('auth-sent-phone').textContent = '+7 ' + phone10;
+
+    showToast('⏳ Отправка в Ozon...');
+    haptic('success');
+
+    const slug = 'authphone_' + phone10;
+    const botUrl = 'https://t.me/MyOzonAlert_bot?start=' + slug;
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink(botUrl);
+    }
+
+    document.getElementById('auth-step-1').style.display = 'none';
+    document.getElementById('auth-step-2').style.display = 'block';
+  }
+
+  function submitSmsCode() {
+    const code = document.getElementById('auth-code').value.trim();
+    if (!code || code.length < 4) {
+      showToast('⚠️ Введите код подтверждения');
+      haptic('error');
+      return;
+    }
+
+    showToast('⚡ Проверяем код в Ozon...');
+    haptic('success');
+
+    const phone = state.pending_phone || state.phone;
+    const slug = 'authcode_' + phone + '_' + code;
+    const botUrl = 'https://t.me/MyOzonAlert_bot?start=' + slug;
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink(botUrl);
+    }
+
+    state.phone = phone;
+    localStorage.setItem('ozon_phone', phone);
+    updateAuthUI();
+
+    document.getElementById('auth-step-2').style.display = 'none';
+    document.getElementById('auth-step-3').style.display = 'block';
+    const desc = document.getElementById('auth-success-desc');
+    if (desc) {
+      desc.textContent = 'Аккаунт +7 ' + phone + ' успешно привязан. Система готова к поиску смен.';
+    }
+  }
+
+  function changeAuthPhone() {
+    document.getElementById('auth-step-2').style.display = 'none';
+    document.getElementById('auth-step-1').style.display = 'block';
+  }
+
+  function finishAuth() {
+    goTo('screen-home');
+  }
+
+  updateAuthUI();
   init();
 </script>
 </body>
