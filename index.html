@@ -1079,6 +1079,11 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
+  // ─── Fast URL Query Parsing ───
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _initBal = _urlParams.get('bal');
+  const _initPhone = _urlParams.get('phone');
+
   // ─── State ───
   const state = {
     screen: 'screen-home',
@@ -1087,7 +1092,7 @@
     process: null,
     shift: 'day',
     date: null,
-    balance: 0,
+    balance: (_initBal !== null && !isNaN(parseFloat(_initBal))) ? parseFloat(_initBal) : 0,
     refCount: 0,
     notif: true,
     user: tg?.initDataUnsafe?.user || null,
@@ -1780,6 +1785,8 @@
     const setBal = document.getElementById('settings-balance');
     if (setBal) setBal.textContent = (state.balance || 0).toFixed(0) + ' ₽ на счёте';
   }
+  updateBalanceUI();
+  updateAuthUI();
 
   function updateAuthUI() {
     const banner = document.getElementById('home-auth-banner');
