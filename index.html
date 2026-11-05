@@ -25,6 +25,7 @@
       --text2: #8B96A8;
       --text3: #4A5568;
       --gold: #FFB800;
+      --yellow: #FFB800;
       --nav-h: 68px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; }
@@ -816,8 +817,27 @@
     </div>
   </div>
 
+  <!-- OzonJob Level / Rating -->
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;">
+    <div class="sec-label" style="margin-top:0;">Уровень OzonJob</div>
+    <div style="font-size:11px; color:var(--text3);" id="level-desc-hint">Доступно: 3 дня</div>
+  </div>
+  <div class="level-badge-wrap" onclick="openLevelSheet()">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:16px;" id="lvl-icon">🔹</span>
+      <div>
+        <div style="font-size:14px; font-weight:700;" id="lvl-title">Уровень 1</div>
+        <div style="font-size:11px; color:var(--text2);" id="lvl-subtitle">Слоты открыты за 3 дня</div>
+      </div>
+    </div>
+    <div style="color:var(--cyan); font-size:13px; font-weight:600;">Выбрать ▾</div>
+  </div>
+
   <!-- Calendar -->
-  <div class="sec-label">Дата</div>
+  <div class="sec-label" style="display:flex; justify-content:space-between; align-items:center;">
+    <span>Дата смены</span>
+    <span style="font-size:11px; font-weight:normal; color:var(--text3);" id="cal-limit-label">Лимит: 3 дня</span>
+  </div>
   <div class="cal-strip" id="cal-strip"></div>
 
   <!-- Price -->
@@ -1037,11 +1057,11 @@
   <!-- STEP 3: Success -->
   <div id="auth-step-3" style="display:none;text-align:center;padding:40px 20px;">
     <div style="font-size:64px;margin-bottom:16px;">🎉</div>
-    <div style="font-size:22px;font-weight:800;margin-bottom:8px;">Аккаунт OzonJob привязан!</div>
+    <div style="font-size:22px;font-weight:800;margin-bottom:8px;">Код отправлен</div>
     <div style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:24px;" id="auth-success-desc">
-      Система готова автоматически бронировать для вас свободные слоты на выбранных складах.
+      Ожидайте подтверждение от бота.
     </div>
-    <button class="btn-submit" onclick="finishAuth()">⚡ Перейти к поиску смен</button>
+    <button class="btn-submit" onclick="finishAuth()">Вернуться на главную</button>
   </div>
 </div>
 
@@ -1085,6 +1105,10 @@
   const _urlParams = new URLSearchParams(_rawSearch);
   const _initBal = _urlParams.get('bal');
   const _initPhone = _urlParams.get('phone');
+
+  // ─── Единые цены (должны совпадать с database.py: SHIFT_PRICE / REFERRAL_BONUS) ───
+  const SHIFT_PRICE = 60;
+  const REFERRAL_BONUS = 60;
 
   // ─── State ───
   const state = {
@@ -1508,23 +1532,105 @@
     state.shift = el.dataset.shift;
   }
 
-  // ─── Calendar ───
+  // ─── OzonJob Rating & Adaptive Calendar ───
+  const LEVEL_CONFIG = {
+    0: { label: 'Уровень 0', sub: 'За 8 ч до смены', days: 1, hours: 8, icon: '⚪', pillClass: 'lvl-0' },
+    1: { label: 'Уровень 1', sub: 'Слоты открыты за 3 дня', days: 3, hours: 72, icon: '🔹', pillClass: 'lvl-1' },
+    2: { label: 'Уровень 2', sub: 'Слоты открыты за 7 дней', days: 7, hours: 168, icon: '🟢', pillClass: 'lvl-2' },
+    3: { label: 'Уровень 3', sub: 'Слоты открыты за 30 дней', days: 30, hours: 720, icon: '🟣', pillClass: 'lvl-3' },
+    4: { label: 'Бриллиант', sub: 'Слоты открыты за 365 дней', days: 365, hours: 8760, icon: '💎', pillClass: 'lvl-4' }
+  };
+
+  state.userLevel = parseInt(localStorage.getItem('ozon_user_level') || '1', 10);
+
+  function openLevelSheet() {
+    haptic('selection');
+    document.getElementById('level-sheet-modal').classList.add('show');
+  }
+
+  function closeLevelSheet(e) {
+    if (e) e.stopPropagation();
+    document.getElementById('level-sheet-modal').classList.remove('show');
+  }
+
+  function setUserLevel(lvl) {
+    haptic('success');
+    state.userLevel = lvl;
+    localStorage.setItem('ozon_user_level', lvl);
+    
+    // Update active in sheet
+    for (let i = 0; i <= 4; i++) {
+      const el = document.getElementById('lopt-' + i);
+      if (el) el.classList.toggle('selected', i === lvl);
+    }
+    
+    updateLevelUI();
+    buildCalendar();
+    closeLevelSheet();
+    showToast('Установлен ' + LEVEL_CONFIG[lvl].label);
+  }
+
+  function updateLevelUI() {
+    const cfg = LEVEL_CONFIG[state.userLevel] || LEVEL_CONFIG[1];
+    const iconEl = document.getElementById('lvl-icon');
+    const titleEl = document.getElementById('lvl-title');
+    const subEl = document.getElementById('lvl-subtitle');
+    const hintEl = document.getElementById('level-desc-hint');
+    const limitEl = document.getElementById('cal-limit-label');
+    
+    if (iconEl) iconEl.textContent = cfg.icon;
+    if (titleEl) titleEl.textContent = cfg.label;
+    if (subEl) subEl.textContent = cfg.sub;
+    if (hintEl) hintEl.textContent = cfg.days === 1 ? 'За 8 часов' : ('Доступно: ' + cfg.days + ' дн.');
+    if (limitEl) limitEl.textContent = cfg.days === 1 ? 'За 8 часов до начала' : ('Лимит: ' + cfg.days + ' дн.');
+  }
+
+  // Локальная дата YYYY-MM-DD (toISOString() даёт UTC и сдвигает день ночью)
+  function localISODate(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
   function buildCalendar() {
     const strip = document.getElementById('cal-strip');
+    if (!strip) return;
     const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
     const today = new Date();
     strip.innerHTML = '';
-    for (let i = 0; i < 14; i++) {
+    
+    const cfg = LEVEL_CONFIG[state.userLevel] || LEVEL_CONFIG[1];
+    const allowedDays = cfg.days; // 1 (8h), 3, 7, 30, 365
+    
+    // Show up to 14 days in quick scroll, or max allowed + locked days for preview
+    const totalDaysToShow = Math.min(Math.max(allowedDays + 3, 7), 14);
+    let firstSelectableSet = false;
+
+    for (let i = 0; i < totalDaysToShow; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      const iso = d.toISOString().slice(0, 10);
-      const isActive = i === 0;
-      if (i === 0) state.date = iso;
+      const iso = localISODate(d);
+      
+      const isAllowed = i < allowedDays;
       const el = document.createElement('div');
-      el.className = 'cal-day' + (isActive ? ' active' : '');
+      
+      if (isAllowed) {
+        if (!firstSelectableSet) {
+          state.date = iso;
+          el.className = 'cal-day active';
+          firstSelectableSet = true;
+        } else {
+          el.className = 'cal-day';
+        }
+        el.onclick = () => selectDate(el, iso);
+      } else {
+        el.className = 'cal-day locked';
+        el.onclick = () => {
+          haptic('error');
+          showToast('🔒 Дата доступна с более высокого уровня');
+        };
+      }
+      
       el.dataset.date = iso;
       el.innerHTML = `<div class="cd-dow">${days[d.getDay()]}</div><div class="cd-num">${d.getDate()}</div>`;
-      el.onclick = () => selectDate(el, iso);
       strip.appendChild(el);
     }
   }
@@ -1656,8 +1762,8 @@
       return;
     }
 
-    if (selectedPayAmount < 60) {
-      showToast('⚠️ Минимальная сумма: 60 ₽ (1 смена)');
+    if (selectedPayAmount < SHIFT_PRICE) {
+      showToast('⚠️ Минимальная сумма: ' + SHIFT_PRICE + ' ₽ (1 смена)');
       haptic('error');
       return;
     }
@@ -1686,7 +1792,7 @@
 
   function handleTopup() {
     const amount = parseInt(document.getElementById('topup-input').value) || 0;
-    if (amount < 100) { showToast('⚠️ Минимум 100 ₽'); haptic('error'); return; }
+    if (amount < SHIFT_PRICE) { showToast('⚠️ Минимум ' + SHIFT_PRICE + ' ₽'); haptic('error'); return; }
     haptic('success');
     showToast('💳 Переход к оплате...');
     // Here would open payment link
@@ -1751,7 +1857,7 @@
         }
         if (d.ref_count !== undefined) {
           document.getElementById('ref-count').textContent = d.ref_count;
-          document.getElementById('ref-earned').textContent = (d.ref_count * 50) + ' ₽';
+          document.getElementById('ref-earned').textContent = (d.ref_count * REFERRAL_BONUS) + ' ₽';
         }
       } catch(e) {}
     });
@@ -1788,7 +1894,6 @@
     if (setBal) setBal.textContent = (state.balance || 0).toFixed(0) + ' ₽ на счёте';
   }
   updateBalanceUI();
-  updateAuthUI();
 
   function updateAuthUI() {
     const banner = document.getElementById('home-auth-banner');
@@ -1877,15 +1982,13 @@
       tg.openTelegramLink(botUrl);
     }
 
-    state.phone = phone;
-    localStorage.setItem('ozon_phone', phone);
-    updateAuthUI();
-
+    // Привязку подтверждает бот после проверки входа в OzonJob (придёт сообщением в чат).
+    // Здесь ничего не сохраняем и «подключён» не показываем — иначе при неверном коде пользователь увидит ложный успех.
     document.getElementById('auth-step-2').style.display = 'none';
     document.getElementById('auth-step-3').style.display = 'block';
     const desc = document.getElementById('auth-success-desc');
     if (desc) {
-      desc.textContent = 'Аккаунт +7 ' + phone + ' успешно привязан. Система готова к поиску смен.';
+      desc.textContent = 'Код передан. Бот проверит вход в OzonJob и пришлёт результат в чат (около 10 секунд). Когда придёт подтверждение — откройте OzonDay заново.';
     }
   }
 
@@ -1898,8 +2001,60 @@
     goTo('screen-home');
   }
 
-  updateAuthUI();
   init();
 </script>
+<!-- Level Selection Sheet Modal -->
+<div class="level-sheet-overlay" id="level-sheet-modal" onclick="closeLevelSheet(event)">
+  <div class="level-sheet" onclick="event.stopPropagation()">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <div style="font-size:17px; font-weight:800;">Уровень в Ozon Job</div>
+      <div style="font-size:14px; color:var(--text2); cursor:pointer;" onclick="closeLevelSheet()">✕</div>
+    </div>
+    <div style="font-size:12px; color:var(--text3); margin-bottom:14px;">
+      Рейтинг определяет, за сколько времени вам открываются слоты в OzonJob:
+    </div>
+
+    <div class="level-opt" id="lopt-0" onclick="setUserLevel(0)">
+      <div>
+        <div style="font-size:14px; font-weight:700; color:#8E8E93;">⚪ Уровень 0</div>
+        <div style="font-size:11px; color:var(--text2); margin-top:2px;">Слоты доступны за 8 часов до начала смены</div>
+      </div>
+      <span class="level-pill lvl-0">За 8 ч</span>
+    </div>
+
+    <div class="level-opt selected" id="lopt-1" onclick="setUserLevel(1)">
+      <div>
+        <div style="font-size:14px; font-weight:700; color:#2F80FF;">🔹 Уровень 1</div>
+        <div style="font-size:11px; color:var(--text2); margin-top:2px;">Слоты доступны за 3 дня</div>
+      </div>
+      <span class="level-pill lvl-1">3 дня</span>
+    </div>
+
+    <div class="level-opt" id="lopt-2" onclick="setUserLevel(2)">
+      <div>
+        <div style="font-size:14px; font-weight:700; color:#27C97B;">🟢 Уровень 2</div>
+        <div style="font-size:11px; color:var(--text2); margin-top:2px;">Слоты доступны за 7 дней</div>
+      </div>
+      <span class="level-pill lvl-2">7 дней</span>
+    </div>
+
+    <div class="level-opt" id="lopt-3" onclick="setUserLevel(3)">
+      <div>
+        <div style="font-size:14px; font-weight:700; color:#9B51E0;">🟣 Уровень 3</div>
+        <div style="font-size:11px; color:var(--text2); margin-top:2px;">Слоты доступны за 30 дней</div>
+      </div>
+      <span class="level-pill lvl-3">30 дней</span>
+    </div>
+
+    <div class="level-opt" id="lopt-4" onclick="setUserLevel(4)">
+      <div>
+        <div style="font-size:14px; font-weight:700; color:#00D2FF;">💎 Бриллиант</div>
+        <div style="font-size:11px; color:var(--text2); margin-top:2px;">Слоты доступны за 365 дней (на год вперёд)</div>
+      </div>
+      <span class="level-pill lvl-4">365 дней</span>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
